@@ -18,31 +18,30 @@ interface AuraProfileIconProps {
 export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
   // Animation values
   const pulseScale = useSharedValue(1);
+  const innerPulse = useSharedValue(1);
   const glowOpacity = useSharedValue(0);
   const swirl = useSharedValue(0);
   const flash = useSharedValue(0);
-  const backgroundOpacity = useSharedValue(1);
-
-  // Color values for smooth transitions
-  const backgroundColorProgress = useSharedValue(0); // 0 = idle, 1 = listening, 2 = processing
+  const ringOpacity = useSharedValue(0.3);
 
   useEffect(() => {
     // Cancel all existing animations
     cancelAnimation(pulseScale);
+    cancelAnimation(innerPulse);
     cancelAnimation(glowOpacity);
     cancelAnimation(swirl);
     cancelAnimation(flash);
-    cancelAnimation(backgroundColorProgress);
+    cancelAnimation(ringOpacity);
 
     switch (state) {
       case 'idle':
-        // Gentle pulsing animation (5-7 seconds per cycle)
-        backgroundColorProgress.value = withTiming(0, { duration: 600 });
-        glowOpacity.value = withTiming(0, { duration: 400 });
+        // Gentle pulsing animation - multiple rings
+        glowOpacity.value = withTiming(0.2, { duration: 400 });
+        ringOpacity.value = withTiming(0.4, { duration: 400 });
         
         pulseScale.value = withRepeat(
           withSequence(
-            withTiming(1.08, { 
+            withTiming(1.15, { 
               duration: 3000, 
               easing: Easing.inOut(Easing.sin) 
             }),
@@ -54,25 +53,57 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
           -1,
           false
         );
+
+        innerPulse.value = withRepeat(
+          withSequence(
+            withTiming(1.3, { 
+              duration: 2500, 
+              easing: Easing.inOut(Easing.sin) 
+            }),
+            withTiming(1, { 
+              duration: 2500, 
+              easing: Easing.inOut(Easing.sin) 
+            })
+          ),
+          -1,
+          false
+        );
         break;
 
       case 'listening':
-        // Solid blue with constant outer glow
-        backgroundColorProgress.value = withTiming(1, { duration: 600 });
-        pulseScale.value = withTiming(1, { duration: 400 });
-        
-        glowOpacity.value = withTiming(0.6, { duration: 400 });
+        // Focused energy with steady glow
+        pulseScale.value = withTiming(1.1, { duration: 400 });
+        innerPulse.value = withTiming(1.2, { duration: 400 });
+        glowOpacity.value = withTiming(0.7, { duration: 400 });
+        ringOpacity.value = withTiming(0.8, { duration: 400 });
         break;
 
       case 'processing':
-        // Swirling gradient animation
-        backgroundColorProgress.value = withTiming(2, { duration: 600 });
-        pulseScale.value = withTiming(1, { duration: 400 });
-        glowOpacity.value = withTiming(0.3, { duration: 400 });
+        // Dynamic swirling energy
+        glowOpacity.value = withTiming(0.5, { duration: 400 });
+        ringOpacity.value = withTiming(0.6, { duration: 400 });
+        
+        pulseScale.value = withRepeat(
+          withSequence(
+            withTiming(1.2, { duration: 1000 }),
+            withTiming(1.05, { duration: 1000 })
+          ),
+          -1,
+          true
+        );
+
+        innerPulse.value = withRepeat(
+          withSequence(
+            withTiming(1.4, { duration: 800 }),
+            withTiming(1.1, { duration: 800 })
+          ),
+          -1,
+          true
+        );
         
         swirl.value = withRepeat(
           withTiming(360, { 
-            duration: 4000, 
+            duration: 3000, 
             easing: Easing.linear 
           }),
           -1,
@@ -81,103 +112,143 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
         break;
 
       case 'responding':
-        // Brief amber flash then return to idle
-        backgroundColorProgress.value = withTiming(0, { duration: 100 });
+        // Quick energy burst then gentle idle
         pulseScale.value = withTiming(1, { duration: 100 });
-        glowOpacity.value = withTiming(0, { duration: 100 });
+        innerPulse.value = withTiming(1, { duration: 100 });
+        glowOpacity.value = withTiming(0.3, { duration: 100 });
+        ringOpacity.value = withTiming(0.5, { duration: 100 });
         
         flash.value = withSequence(
           withTiming(1, { duration: 150, easing: Easing.out(Easing.quad) }),
           withTiming(0, { duration: 150, easing: Easing.in(Easing.quad) })
         );
 
-        // After flash, start idle animation
+        // After flash, gentle idle animation
         setTimeout(() => {
-          if (state === 'responding') {
-            pulseScale.value = withRepeat(
-              withSequence(
-                withTiming(1.08, { 
-                  duration: 3000, 
-                  easing: Easing.inOut(Easing.sin) 
-                }),
-                withTiming(1, { 
-                  duration: 3000, 
-                  easing: Easing.inOut(Easing.sin) 
-                })
-              ),
-              -1,
-              false
-            );
-          }
+          glowOpacity.value = withTiming(0.2, { duration: 600 });
+          ringOpacity.value = withTiming(0.4, { duration: 600 });
+          
+          pulseScale.value = withRepeat(
+            withSequence(
+              withTiming(1.15, { 
+                duration: 3000, 
+                easing: Easing.inOut(Easing.sin) 
+              }),
+              withTiming(1, { 
+                duration: 3000, 
+                easing: Easing.inOut(Easing.sin) 
+              })
+            ),
+            -1,
+            false
+          );
         }, 300);
         break;
     }
   }, [state]);
 
   // Animated styles
-  const containerStyle = useAnimatedStyle(() => ({
+  const outerRingStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulseScale.value }],
-  }));
-
-  const glowStyle = useAnimatedStyle(() => ({
     opacity: glowOpacity.value,
   }));
 
-  const swirlStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${swirl.value}deg` }],
+  const middleRingStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseScale.value * 0.8 }],
+    opacity: ringOpacity.value,
+  }));
+
+  const innerRingStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: innerPulse.value * 0.6 },
+      { rotate: `${swirl.value}deg` }
+    ],
+    opacity: ringOpacity.value * 0.8,
   }));
 
   const flashStyle = useAnimatedStyle(() => ({
     opacity: flash.value,
+    transform: [{ scale: pulseScale.value * 1.2 }],
   }));
 
-  // Get gradient colors based on state
-  const getGradientColors = () => {
+  // Get colors based on state
+  const getColors = () => {
     switch (state) {
       case 'idle':
-        return ['#e2e8f0', '#60a5fa']; // slate-200 to blue-400
+        return {
+          outer: ['rgba(226, 232, 240, 0.3)', 'rgba(96, 165, 250, 0.3)'], // slate-200 to blue-400
+          middle: ['rgba(226, 232, 240, 0.5)', 'rgba(96, 165, 250, 0.5)'],
+          inner: ['rgba(226, 232, 240, 0.7)', 'rgba(96, 165, 250, 0.7)'],
+        };
       case 'listening':
-        return ['#3b82f6', '#3b82f6']; // solid blue-500
+        return {
+          outer: ['rgba(59, 130, 246, 0.4)', 'rgba(59, 130, 246, 0.2)'], // blue-500
+          middle: ['rgba(59, 130, 246, 0.6)', 'rgba(59, 130, 246, 0.4)'],
+          inner: ['rgba(59, 130, 246, 0.8)', 'rgba(59, 130, 246, 0.6)'],
+        };
       case 'processing':
-        return ['#8b5cf6', '#6366f1']; // purple-500 to indigo-500
+        return {
+          outer: ['rgba(139, 92, 246, 0.4)', 'rgba(99, 102, 241, 0.3)'], // purple-500 to indigo-500
+          middle: ['rgba(139, 92, 246, 0.6)', 'rgba(99, 102, 241, 0.5)'],
+          inner: ['rgba(139, 92, 246, 0.8)', 'rgba(99, 102, 241, 0.7)'],
+        };
       case 'responding':
-        return ['#e2e8f0', '#60a5fa']; // same as idle for base
+        return {
+          outer: ['rgba(252, 211, 77, 0.4)', 'rgba(245, 158, 11, 0.3)'], // amber-300 to amber-500
+          middle: ['rgba(252, 211, 77, 0.6)', 'rgba(245, 158, 11, 0.5)'],
+          inner: ['rgba(252, 211, 77, 0.8)', 'rgba(245, 158, 11, 0.7)'],
+        };
       default:
-        return ['#e2e8f0', '#60a5fa'];
+        return {
+          outer: ['rgba(226, 232, 240, 0.3)', 'rgba(96, 165, 250, 0.3)'],
+          middle: ['rgba(226, 232, 240, 0.5)', 'rgba(96, 165, 250, 0.5)'],
+          inner: ['rgba(226, 232, 240, 0.7)', 'rgba(96, 165, 250, 0.7)'],
+        };
     }
   };
 
+  const colors = getColors();
+
   return (
     <View style={styles.container}>
-      {/* Outer glow effect */}
-      <Animated.View style={[styles.glow, glowStyle]} />
-      
-      {/* Main icon container */}
-      <Animated.View style={[styles.iconContainer, containerStyle]}>
-        {/* Processing swirl effect */}
-        {state === 'processing' && (
-          <Animated.View style={[styles.swirlContainer, swirlStyle]}>
-            <LinearGradient
-              colors={getGradientColors()}
-              style={styles.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-          </Animated.View>
-        )}
-        
-        {/* Main background gradient */}
-        {state !== 'processing' && (
-          <LinearGradient
-            colors={getGradientColors()}
-            style={styles.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-        )}
-        
-        {/* Flash overlay for responding state */}
-        <Animated.View style={[styles.flashOverlay, flashStyle]} />
+      {/* Outer aura ring */}
+      <Animated.View style={[styles.outerRing, outerRingStyle]}>
+        <LinearGradient
+          colors={colors.outer}
+          style={styles.ring}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      </Animated.View>
+
+      {/* Middle aura ring */}
+      <Animated.View style={[styles.middleRing, middleRingStyle]}>
+        <LinearGradient
+          colors={colors.middle}
+          style={styles.ring}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      </Animated.View>
+
+      {/* Inner aura core */}
+      <Animated.View style={[styles.innerRing, innerRingStyle]}>
+        <LinearGradient
+          colors={colors.inner}
+          style={styles.ring}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      </Animated.View>
+
+      {/* Flash overlay for responding state */}
+      <Animated.View style={[styles.flashOverlay, flashStyle]}>
+        <LinearGradient
+          colors={['rgba(252, 211, 77, 0.9)', 'rgba(245, 158, 11, 0.7)']}
+          style={styles.ring}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
       </Animated.View>
     </View>
   );
@@ -191,43 +262,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  glow: {
+  outerRing: {
     position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3b82f6',
-    opacity: 0,
-  },
-  iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  gradient: {
+  middleRing: {
     position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  innerRing: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  ring: {
     width: '100%',
     height: '100%',
-  },
-  swirlContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
+    borderRadius: 50,
   },
   flashOverlay: {
     position: 'absolute',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#fcd34d', // amber-300
-    opacity: 0,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
 });
