@@ -70,9 +70,6 @@ export default function ChatScreen() {
   // Animation values
   const backgroundScale = useSharedValue(1);
   const backgroundRotation = useSharedValue(0);
-  const avatarOpacity = useSharedValue(0);
-  const avatarScale = useSharedValue(0.8);
-  const headerOpacity = useSharedValue(0);
 
   useEffect(() => {
     // Start breathing animation for background
@@ -99,13 +96,6 @@ export default function ChatScreen() {
       -1,
       false
     );
-
-    // Animate header and avatar
-    setTimeout(() => {
-      headerOpacity.value = withTiming(1, { duration: 800 });
-      avatarOpacity.value = withTiming(1, { duration: 800 });
-      avatarScale.value = withTiming(1, { duration: 800 });
-    }, 300);
 
     // Initialize chat with welcome messages
     setTimeout(() => {
@@ -193,15 +183,6 @@ export default function ChatScreen() {
     ],
   }));
 
-  const headerAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-  }));
-
-  const avatarAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: avatarOpacity.value,
-    transform: [{ scale: avatarScale.value }],
-  }));
-
   return (
     <View style={styles.container}>
       {/* Animated Background */}
@@ -219,8 +200,8 @@ export default function ChatScreen() {
           style={styles.keyboardAvoid}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* Header */}
-          <Animated.View style={[styles.header, headerAnimatedStyle]}>
+          {/* Header - No animations */}
+          <View style={styles.header}>
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => router.back()}
@@ -232,7 +213,7 @@ export default function ChatScreen() {
               <Text style={styles.headerTitle}>
                 {coachingStyle === 'planner' ? 'Structured Support' : 'Adaptive Guidance'}
               </Text>
-              <Animated.View style={[styles.avatarContainer, avatarAnimatedStyle]}>
+              <View style={styles.avatarContainer}>
                 <LinearGradient
                   colors={['#a855f7', '#6366f1']}
                   style={styles.avatar}
@@ -241,9 +222,9 @@ export default function ChatScreen() {
                 >
                   <Brain size={20} color="#fff" strokeWidth={2} />
                 </LinearGradient>
-              </Animated.View>
+              </View>
             </View>
-          </Animated.View>
+          </View>
 
           {/* Chat Messages */}
           <ScrollView 
@@ -355,7 +336,7 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   avatarContainer: {
-    // Avatar animation container
+    // No animation styles
   },
   avatar: {
     width: 40,
