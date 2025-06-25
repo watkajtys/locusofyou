@@ -39,7 +39,6 @@ export default function ChatScreen() {
   const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  // const [isTyping, setIsTyping] = useState(false); // No longer needed
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Animation values
