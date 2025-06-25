@@ -10,9 +10,15 @@ import { Star, Shield } from 'lucide-react-native';
 
 interface OnboardingChoiceButtonsProps {
   onChoice: (choice: 'promotion' | 'prevention') => void;
+  onInteractionStart?: () => void;
+  onInteractionEnd?: () => void;
 }
 
-export default function OnboardingChoiceButtons({ onChoice }: OnboardingChoiceButtonsProps) {
+export default function OnboardingChoiceButtons({ 
+  onChoice, 
+  onInteractionStart,
+  onInteractionEnd 
+}: OnboardingChoiceButtonsProps) {
   const [selectedChoice, setSelectedChoice] = useState<'promotion' | 'prevention' | null>(null);
   
   // Animation values for button press feedback
@@ -22,7 +28,10 @@ export default function OnboardingChoiceButtons({ onChoice }: OnboardingChoiceBu
   const preventionBorderOpacity = useSharedValue(0);
 
   const handlePromotionPress = () => {
+    if (selectedChoice !== null) return;
+    
     setSelectedChoice('promotion');
+    onInteractionStart?.(); // Notify parent of interaction start
     
     // Animate button feedback
     promotionScale.value = withSpring(0.98, {}, () => {
@@ -33,11 +42,15 @@ export default function OnboardingChoiceButtons({ onChoice }: OnboardingChoiceBu
     // Call parent callback after animation
     setTimeout(() => {
       onChoice('promotion');
+      onInteractionEnd?.(); // Notify parent of interaction end
     }, 200);
   };
 
   const handlePreventionPress = () => {
+    if (selectedChoice !== null) return;
+    
     setSelectedChoice('prevention');
+    onInteractionStart?.(); // Notify parent of interaction start
     
     // Animate button feedback
     preventionScale.value = withSpring(0.98, {}, () => {
@@ -48,7 +61,19 @@ export default function OnboardingChoiceButtons({ onChoice }: OnboardingChoiceBu
     // Call parent callback after animation
     setTimeout(() => {
       onChoice('prevention');
+      onInteractionEnd?.(); // Notify parent of interaction end
     }, 200);
+  };
+
+  // Handle touch feedback for aura state
+  const handleTouchStart = (buttonType: 'promotion' | 'prevention') => {
+    if (selectedChoice !== null) return;
+    onInteractionStart?.();
+  };
+
+  const handleTouchEnd = () => {
+    if (selectedChoice !== null) return;
+    onInteractionEnd?.();
   };
 
   // Animated styles
@@ -78,6 +103,8 @@ export default function OnboardingChoiceButtons({ onChoice }: OnboardingChoiceBu
             selectedChoice === 'promotion' && styles.selectedButton
           ]}
           onPress={handlePromotionPress}
+          onPressIn={() => handleTouchStart('promotion')}
+          onPressOut={handleTouchEnd}
           activeOpacity={0.9}
           disabled={selectedChoice !== null}
         >
@@ -111,6 +138,8 @@ export default function OnboardingChoiceButtons({ onChoice }: OnboardingChoiceBu
             selectedChoice === 'prevention' && styles.selectedButton
           ]}
           onPress={handlePreventionPress}
+          onPressIn={() => handleTouchStart('prevention')}
+          onPressOut={handleTouchEnd}
           activeOpacity={0.9}
           disabled={selectedChoice !== null}
         >

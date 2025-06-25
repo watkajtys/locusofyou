@@ -50,25 +50,37 @@ type InteractionStep =
   | 'final-question'
   | 'complete';
 
+type InteractionState = 'none' | 'touching' | 'selected' | 'transitioning';
+
 const SliderComponent = ({ 
   leftLabel, 
   rightLabel, 
   value, 
   onValueChange,
+  onInteractionStart,
+  onInteractionEnd,
   disabled = false 
 }: {
   leftLabel: string;
   rightLabel: string;
   value: number;
   onValueChange: (value: number) => void;
+  onInteractionStart?: () => void;
+  onInteractionEnd?: () => void;
   disabled?: boolean;
 }) => {
   const sliderWidth = width - 96; // Account for container padding
   const thumbPosition = useRef(new RNAnimated.Value((value / 100) * sliderWidth)).current;
+  const [isDragging, setIsDragging] = useState(false);
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => !disabled,
     onMoveShouldSetPanResponder: () => !disabled,
+    onPanResponderGrant: () => {
+      if (disabled) return;
+      setIsDragging(true);
+      onInteractionStart?.();
+    },
     onPanResponderMove: (_, gestureState) => {
       if (disabled) return;
       
@@ -77,6 +89,11 @@ const SliderComponent = ({
       
       const newValue = Math.round((newPosition / sliderWidth) * 100);
       onValueChange(newValue);
+    },
+    onPanResponderRelease: () => {
+      if (disabled) return;
+      setIsDragging(false);
+      onInteractionEnd?.();
     },
   });
 
@@ -98,6 +115,7 @@ const SliderComponent = ({
             styles.sliderThumb,
             {
               left: thumbPosition,
+              backgroundColor: isDragging ? '#1d4ed8' : '#3b82f6', // Darker blue when dragging
             }
           ]} 
         />
@@ -111,6 +129,7 @@ export default function OnboardingScreen() {
   const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
   const [currentStep, setCurrentStep] = useState<InteractionStep>('welcome');
   const [showContent, setShowContent] = useState(false);
+  const [interactionState, setInteractionState] = useState<InteractionState>('none');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     coachingStyle: coachingStyle || 'adapter',
     regulatoryFocus: null,
@@ -142,11 +161,13 @@ export default function OnboardingScreen() {
   }, []);
 
   const animateToNextStep = (nextStep: InteractionStep) => {
+    setInteractionState('transitioning');
     contentOpacity.value = withTiming(0, { duration: 400 });
     contentTranslateY.value = withTiming(-20, { duration: 400 });
     
     setTimeout(() => {
       setCurrentStep(nextStep);
+      setInteractionState('none');
       contentOpacity.value = withTiming(1, { duration: 600 });
       contentTranslateY.value = withTiming(0, { duration: 600 });
     }, 400);
@@ -154,6 +175,7 @@ export default function OnboardingScreen() {
 
   const handleCardChoice = (choice: string, field: keyof OnboardingData) => {
     setOnboardingData(prev => ({ ...prev, [field]: choice }));
+    setInteractionState('selected');
     
     setTimeout(() => {
       switch (currentStep) {
@@ -179,7 +201,16 @@ export default function OnboardingScreen() {
     handleCardChoice(choice, 'regulatoryFocus');
   };
 
+  const handleInteractionStart = () => {
+    setInteractionState('touching');
+  };
+
+  const handleInteractionEnd = () => {
+    setInteractionState('none');
+  };
+
   const handleSliderComplete = () => {
+    setInteractionState('selected');
     setTimeout(() => {
       if (currentStep === 'slider1') {
         animateToNextStep('slider2');
@@ -191,33 +222,48 @@ export default function OnboardingScreen() {
 
   const handleFinalSubmit = () => {
     if (onboardingData.currentFocus.trim()) {
-      router.push({
-        pathname: '/chat',
-        params: { 
-          coachingStyle: onboardingData.coachingStyle,
-          onboardingData: JSON.stringify(onboardingData)
-        }
-      });
+      setInteractionState('selected');
+      setTimeout(() => {
+        router.push({
+          pathname: '/chat',
+          params: { 
+            coachingStyle: onboardingData.coachingStyle,
+            onboardingData: JSON.stringify(onboardingData)
+          }
+        });
+      }, 300);
     }
   };
 
-  // Get appropriate aura state based on current step
+  // Get appropriate aura state based on current step and interaction
   const getAuraState = (): 'idle' | 'listening' | 'processing' | 'responding' => {
-    switch (currentStep) {
-      case 'welcome':
+    // Override based on interaction state
+    switch (interactionState) {
+      case 'touching':
         return 'processing';
-      case 'question1':
-      case 'question2':
-      case 'question3':
-      case 'question4':
-        return 'listening';
-      case 'slider1':
-      case 'slider2':
+      case 'selected':
         return 'responding';
-      case 'final-question':
-        return 'listening';
+      case 'transitioning':
+        return 'processing';
+      case 'none':
       default:
-        return 'idle';
+        // Base state on current step
+        switch (currentStep) {
+          case 'welcome':
+            return 'processing';
+          case 'question1':
+          case 'question2':
+          case 'question3':
+          case 'question4':
+            return 'listening';
+          case 'slider1':
+          case 'slider2':
+            return 'listening';
+          case 'final-question':
+            return 'listening';
+          default:
+            return 'idle';
+        }
     }
   };
 
@@ -252,7 +298,11 @@ export default function OnboardingScreen() {
                 icon={<Compass size={24} color="#94a3b8" strokeWidth={2} />}
               />
               <View style={styles.choiceButtonsContainer}>
-                <OnboardingChoiceButtons onChoice={handleChoiceButtonPress} />
+                <OnboardingChoiceButtons 
+                  onChoice={handleChoiceButtonPress} 
+                  onInteractionStart={handleInteractionStart}
+                  onInteractionEnd={handleInteractionEnd}
+                />
               </View>
             </View>
             <View style={styles.actionSection}>
@@ -273,6 +323,8 @@ export default function OnboardingScreen() {
                 <TouchableOpacity
                   style={styles.card}
                   onPress={() => handleCardChoice('internal', 'locusOfControl')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.cardText}>Disciplined preparation and hard work</Text>
@@ -280,6 +332,8 @@ export default function OnboardingScreen() {
                 <TouchableOpacity
                   style={styles.card}
                   onPress={() => handleCardChoice('external', 'locusOfControl')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.cardText}>Being in the right place at the right time</Text>
@@ -304,6 +358,8 @@ export default function OnboardingScreen() {
                 <TouchableOpacity
                   style={styles.card}
                   onPress={() => handleCardChoice('fixed', 'mindset')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.cardText}>Mostly born with it</Text>
@@ -311,6 +367,8 @@ export default function OnboardingScreen() {
                 <TouchableOpacity
                   style={styles.card}
                   onPress={() => handleCardChoice('growth', 'mindset')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.cardText}>A skill that can be developed</Text>
@@ -358,12 +416,16 @@ export default function OnboardingScreen() {
                 rightLabel="Bouncing ideas off of a group"
                 value={onboardingData.extraversion}
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, extraversion: value }))}
+                onInteractionStart={handleInteractionStart}
+                onInteractionEnd={handleInteractionEnd}
               />
             </View>
             <View style={styles.actionSection}>
               <TouchableOpacity
                 style={styles.continueButton}
                 onPress={handleSliderComplete}
+                onPressIn={handleInteractionStart}
+                onPressOut={handleInteractionEnd}
                 activeOpacity={0.8}
               >
                 <Text style={styles.continueButtonText}>Continue</Text>
@@ -387,12 +449,16 @@ export default function OnboardingScreen() {
                 rightLabel="Find common ground and seek to understand their view"
                 value={onboardingData.agreeableness}
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, agreeableness: value }))}
+                onInteractionStart={handleInteractionStart}
+                onInteractionEnd={handleInteractionEnd}
               />
             </View>
             <View style={styles.actionSection}>
               <TouchableOpacity
                 style={styles.continueButton}
                 onPress={handleSliderComplete}
+                onPressIn={handleInteractionStart}
+                onPressOut={handleInteractionEnd}
                 activeOpacity={0.8}
               >
                 <Text style={styles.continueButtonText}>Continue</Text>
@@ -415,6 +481,8 @@ export default function OnboardingScreen() {
                   style={styles.textInput}
                   value={onboardingData.currentFocus}
                   onChangeText={(text) => setOnboardingData(prev => ({ ...prev, currentFocus: text }))}
+                  onFocus={handleInteractionStart}
+                  onBlur={handleInteractionEnd}
                   placeholder="Share what's most important to you right now..."
                   placeholderTextColor="#94a3b8"
                   multiline
@@ -430,6 +498,8 @@ export default function OnboardingScreen() {
                   onboardingData.currentFocus.trim() ? styles.submitButtonActive : styles.submitButtonInactive
                 ]}
                 onPress={handleFinalSubmit}
+                onPressIn={handleInteractionStart}
+                onPressOut={handleInteractionEnd}
                 disabled={!onboardingData.currentFocus.trim()}
                 activeOpacity={0.8}
               >
