@@ -26,6 +26,8 @@ import TypingIndicator from '@/components/TypingIndicator';
 import OnboardingStepHeader from '@/components/OnboardingStepHeader';
 import OnboardingQuestion from '@/components/OnboardingQuestion';
 import OnboardingChoiceButtons from '@/components/OnboardingChoiceButtons';
+import OnboardingSliderCard from '@/components/OnboardingSliderCard';
+import OnboardingTransitionMessage from '@/components/OnboardingTransitionMessage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,86 +46,14 @@ type InteractionStep =
   | 'question1' 
   | 'question2'
   | 'question3'
-  | 'question4'
+  | 'transition-to-sliders'
   | 'slider1'
+  | 'slider-transition'
   | 'slider2'
   | 'final-question'
   | 'complete';
 
 type InteractionState = 'none' | 'touching' | 'selected' | 'transitioning';
-
-const SliderComponent = ({ 
-  leftLabel, 
-  rightLabel, 
-  value, 
-  onValueChange,
-  onInteractionStart,
-  onInteractionEnd,
-  disabled = false 
-}: {
-  leftLabel: string;
-  rightLabel: string;
-  value: number;
-  onValueChange: (value: number) => void;
-  onInteractionStart?: () => void;
-  onInteractionEnd?: () => void;
-  disabled?: boolean;
-}) => {
-  const sliderWidth = width - 96; // Account for container padding
-  const thumbPosition = useRef(new RNAnimated.Value((value / 100) * sliderWidth)).current;
-  const [isDragging, setIsDragging] = useState(false);
-
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => !disabled,
-    onMoveShouldSetPanResponder: () => !disabled,
-    onPanResponderGrant: () => {
-      if (disabled) return;
-      setIsDragging(true);
-      onInteractionStart?.();
-    },
-    onPanResponderMove: (_, gestureState) => {
-      if (disabled) return;
-      
-      const newPosition = Math.max(0, Math.min(sliderWidth, gestureState.moveX - 48));
-      thumbPosition.setValue(newPosition);
-      
-      const newValue = Math.round((newPosition / sliderWidth) * 100);
-      onValueChange(newValue);
-    },
-    onPanResponderRelease: () => {
-      if (disabled) return;
-      setIsDragging(false);
-      onInteractionEnd?.();
-    },
-  });
-
-  useEffect(() => {
-    RNAnimated.timing(thumbPosition, {
-      toValue: (value / 100) * sliderWidth,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [value, sliderWidth]);
-
-  return (
-    <View style={styles.sliderContainer}>
-      <Text style={styles.sliderLabel}>{leftLabel}</Text>
-      <View style={styles.sliderTrack} {...panResponder.panHandlers}>
-        <View style={styles.sliderLine} />
-        <RNAnimated.View 
-          style={[
-            styles.sliderThumb,
-            {
-              left: thumbPosition,
-              backgroundColor: isDragging ? '#1d4ed8' : '#3b82f6', // Darker blue when dragging
-            }
-          ]} 
-        />
-      </View>
-      <Text style={styles.sliderLabel}>{rightLabel}</Text>
-    </View>
-  );
-};
 
 export default function OnboardingScreen() {
   const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
@@ -186,10 +116,7 @@ export default function OnboardingScreen() {
           animateToNextStep('question3');
           break;
         case 'question3':
-          animateToNextStep('question4');
-          break;
-        case 'question4':
-          animateToNextStep('slider1');
+          animateToNextStep('transition-to-sliders');
           break;
         default:
           break;
@@ -209,12 +136,12 @@ export default function OnboardingScreen() {
     setInteractionState('none');
   };
 
-  const handleSliderComplete = () => {
+  const handleSliderComplete = (stepType: 'slider1' | 'slider2') => {
     setInteractionState('selected');
     setTimeout(() => {
-      if (currentStep === 'slider1') {
-        animateToNextStep('slider2');
-      } else if (currentStep === 'slider2') {
+      if (stepType === 'slider1') {
+        animateToNextStep('slider-transition');
+      } else if (stepType === 'slider2') {
         animateToNextStep('final-question');
       }
     }, 500);
@@ -250,15 +177,14 @@ export default function OnboardingScreen() {
         // Base state on current step
         switch (currentStep) {
           case 'welcome':
+          case 'transition-to-sliders':
+          case 'slider-transition':
             return 'processing';
           case 'question1':
           case 'question2':
           case 'question3':
-          case 'question4':
-            return 'listening';
           case 'slider1':
           case 'slider2':
-            return 'listening';
           case 'final-question':
             return 'listening';
           default:
@@ -280,12 +206,6 @@ export default function OnboardingScreen() {
                 onComplete={() => setTimeout(() => animateToNextStep('question1'), 1000)}
               />
             </View>
-            <View style={styles.interactionSection}>
-              {/* Reserved space for future interactions */}
-            </View>
-            <View style={styles.actionSection}>
-              {/* Reserved space for action buttons */}
-            </View>
           </View>
         );
 
@@ -304,9 +224,6 @@ export default function OnboardingScreen() {
                   onInteractionEnd={handleInteractionEnd}
                 />
               </View>
-            </View>
-            <View style={styles.actionSection}>
-              {/* Reserved space for action buttons */}
             </View>
           </View>
         );
@@ -340,9 +257,6 @@ export default function OnboardingScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.actionSection}>
-              {/* Reserved space for action buttons */}
-            </View>
           </View>
         );
 
@@ -375,28 +289,17 @@ export default function OnboardingScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.actionSection}>
-              {/* Reserved space for action buttons */}
-            </View>
           </View>
         );
 
-      case 'question4':
+      case 'transition-to-sliders':
         return (
           <View style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <AIMessage text="Thanks for that. Now for a couple of questions on a different note. For these, just slide to the point on the scale that feels most like you." />
-              <AIMessage 
-                text="When it comes to tackling a big project, where do you draw your energy from?"
-                delay={1500}
+              <OnboardingTransitionMessage 
+                message="Thanks for that. Now for a couple of questions on a different note. For these, just slide to the point on the scale that feels most like you."
                 onComplete={() => setTimeout(() => animateToNextStep('slider1'), 1000)}
               />
-            </View>
-            <View style={styles.interactionSection}>
-              {/* Reserved space for future slider */}
-            </View>
-            <View style={styles.actionSection}>
-              {/* Reserved space for action buttons */}
             </View>
           </View>
         );
@@ -404,26 +307,22 @@ export default function OnboardingScreen() {
       case 'slider1':
         return (
           <View style={styles.stepContainer}>
-            <View style={styles.messagesSection}>
-              <OnboardingQuestion 
-                questionText="When it comes to tackling a big project, where do you draw your energy from?"
-                icon={<Lightbulb size={24} color="#94a3b8" strokeWidth={2} />}
-              />
-            </View>
             <View style={styles.interactionSection}>
-              <SliderComponent
+              <OnboardingSliderCard
+                questionText="When it comes to tackling a big project, where do you draw your energy from?"
                 leftLabel="Working quietly on my own"
                 rightLabel="Bouncing ideas off of a group"
                 value={onboardingData.extraversion}
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, extraversion: value }))}
                 onInteractionStart={handleInteractionStart}
                 onInteractionEnd={handleInteractionEnd}
+                icon={<Lightbulb size={24} color="#94a3b8" strokeWidth={2} />}
               />
             </View>
             <View style={styles.actionSection}>
               <TouchableOpacity
                 style={styles.continueButton}
-                onPress={handleSliderComplete}
+                onPress={() => handleSliderComplete('slider1')}
                 onPressIn={handleInteractionStart}
                 onPressOut={handleInteractionEnd}
                 activeOpacity={0.8}
@@ -434,29 +333,38 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 'slider2':
+      case 'slider-transition':
         return (
           <View style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <OnboardingQuestion 
-                questionText="When someone gives you critical feedback on your work, what's your initial instinct?"
-                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
+              <OnboardingTransitionMessage 
+                message="Got it. One more like that..."
+                delay={0}
+                onComplete={() => setTimeout(() => animateToNextStep('slider2'), 800)}
               />
             </View>
+          </View>
+        );
+
+      case 'slider2':
+        return (
+          <View style={styles.stepContainer}>
             <View style={styles.interactionSection}>
-              <SliderComponent
+              <OnboardingSliderCard
+                questionText="When someone gives you critical feedback on your work, what's your initial instinct?"
                 leftLabel="Challenge the feedback and defend my position"
                 rightLabel="Find common ground and seek to understand their view"
                 value={onboardingData.agreeableness}
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, agreeableness: value }))}
                 onInteractionStart={handleInteractionStart}
                 onInteractionEnd={handleInteractionEnd}
+                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
               />
             </View>
             <View style={styles.actionSection}>
               <TouchableOpacity
                 style={styles.continueButton}
-                onPress={handleSliderComplete}
+                onPress={() => handleSliderComplete('slider2')}
                 onPressIn={handleInteractionStart}
                 onPressOut={handleInteractionEnd}
                 activeOpacity={0.8}
@@ -542,13 +450,13 @@ export default function OnboardingScreen() {
       </Animated.View>
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Header using new OnboardingStepHeader component */}
+        {/* Header */}
         <OnboardingStepHeader 
           onBackPress={() => router.back()}
           auraState={getAuraState()}
         />
 
-        {/* Fixed Content Area */}
+        {/* Content Area */}
         <ScrollView 
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -642,21 +550,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepContainer: {
-    minHeight: height - 150, // Ensure consistent minimum height
+    minHeight: height - 150,
     paddingVertical: 20,
   },
   messagesSection: {
-    minHeight: 120, // Reserved space for messages/questions
+    minHeight: 120,
     paddingBottom: 20,
   },
   interactionSection: {
     flex: 1,
-    minHeight: 200, // Reserved space for interactions
+    minHeight: 200,
     justifyContent: 'center',
     paddingVertical: 20,
   },
   actionSection: {
-    minHeight: 80, // Reserved space for action buttons
+    minHeight: 80,
     justifyContent: 'flex-end',
     paddingBottom: 20,
   },
@@ -706,7 +614,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
-    minHeight: 80, // Consistent card height
+    minHeight: 80,
   },
   cardText: {
     fontSize: 16,
@@ -714,43 +622,6 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     textAlign: 'center',
     lineHeight: 22,
-  },
-  sliderContainer: {
-    width: '100%',
-    paddingHorizontal: 16,
-    marginTop: 20,
-  },
-  sliderLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: '#64748b',
-    textAlign: 'center',
-    marginVertical: 8,
-    lineHeight: 18,
-    minHeight: 36, // Consistent label height
-  },
-  sliderTrack: {
-    height: 60,
-    justifyContent: 'center',
-    marginVertical: 16,
-  },
-  sliderLine: {
-    height: 4,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 2,
-  },
-  sliderThumb: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#3b82f6',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-    top: -10,
   },
   continueButton: {
     backgroundColor: '#3b82f6',
@@ -763,7 +634,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
-    minWidth: 120, // Consistent button width
+    minWidth: 120,
   },
   continueButtonText: {
     fontSize: 16,
@@ -784,7 +655,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     borderWidth: 2,
     borderColor: '#e2e8f0',
-    height: 140, // Fixed height for consistency
+    height: 140,
     textAlignVertical: 'top',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -806,7 +677,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     alignSelf: 'center',
-    minWidth: 180, // Consistent button width
+    minWidth: 180,
   },
   submitButtonActive: {
     backgroundColor: '#3b82f6',
