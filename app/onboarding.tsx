@@ -21,9 +21,9 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronLeft, ArrowRight } from 'lucide-react-native';
+import { ArrowRight } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
-import AuraProfileIcon from '@/components/AuraProfileIcon';
+import OnboardingStepHeader from '@/components/OnboardingStepHeader';
 
 const { width, height } = Dimensions.get('window');
 
@@ -482,22 +482,11 @@ export default function OnboardingScreen() {
       </Animated.View>
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Fixed Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ChevronLeft size={24} color="#475569" strokeWidth={2} />
-          </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Getting to know you</Text>
-            <View style={styles.avatarContainer}>
-              <AuraProfileIcon state={getAuraState()} />
-            </View>
-          </View>
-        </View>
+        {/* Header using new OnboardingStepHeader component */}
+        <OnboardingStepHeader 
+          onBackPress={() => router.back()}
+          auraState={getAuraState()}
+        />
 
         {/* Fixed Content Area */}
         <View style={styles.contentArea}>
@@ -577,30 +566,6 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    height: 72, // Fixed header height
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    color: '#334155',
-  },
-  avatarContainer: {
-    // Remove the previous styling as AuraProfileIcon handles its own styling
   },
   contentArea: {
     flex: 1,
