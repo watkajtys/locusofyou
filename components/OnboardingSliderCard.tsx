@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ interface OnboardingSliderCardProps {
   onValueChange: (value: number) => void;
   onInteractionStart?: () => void;
   onInteractionEnd?: () => void;
+  onAutoAdvance?: () => void; // New prop for auto-advance
   disabled?: boolean;
   icon?: React.ReactNode;
 }
@@ -30,6 +31,7 @@ export default function OnboardingSliderCard({
   onValueChange,
   onInteractionStart,
   onInteractionEnd,
+  onAutoAdvance,
   disabled = false,
   icon
 }: OnboardingSliderCardProps) {
@@ -37,6 +39,22 @@ export default function OnboardingSliderCard({
   const thumbPosition = useRef(new RNAnimated.Value((value / 100) * sliderWidth)).current;
   const thumbScale = useRef(new RNAnimated.Value(1)).current;
   const trackProgress = useRef(new RNAnimated.Value(value / 100)).current;
+  
+  // Auto-advance functionality
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const autoAdvanceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerAutoAdvance = () => {
+    if (autoAdvanceTimer.current) {
+      clearTimeout(autoAdvanceTimer.current);
+    }
+    
+    autoAdvanceTimer.current = setTimeout(() => {
+      if (hasInteracted && onAutoAdvance) {
+        onAutoAdvance();
+      }
+    }, 1000); // 1-second pause as requested
+  };
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => !disabled,
@@ -44,13 +62,14 @@ export default function OnboardingSliderCard({
     onPanResponderGrant: (evt) => {
       if (disabled) return;
       
+      setHasInteracted(true);
       onInteractionStart?.();
       
       // Scale up thumb for visual feedback
       RNAnimated.spring(thumbScale, {
-        toValue: 1.2,
+        toValue: 1.3,
         useNativeDriver: false,
-        tension: 150,
+        tension: 200,
         friction: 8,
       }).start();
       
@@ -62,13 +81,13 @@ export default function OnboardingSliderCard({
       RNAnimated.spring(thumbPosition, {
         toValue: clampedX,
         useNativeDriver: false,
-        tension: 150,
+        tension: 200,
         friction: 8,
       }).start();
       
       RNAnimated.timing(trackProgress, {
         toValue: clampedX / sliderWidth,
-        duration: 150,
+        duration: 200,
         useNativeDriver: false,
       }).start();
       
@@ -91,11 +110,14 @@ export default function OnboardingSliderCard({
       RNAnimated.spring(thumbScale, {
         toValue: 1,
         useNativeDriver: false,
-        tension: 150,
+        tension: 200,
         friction: 8,
       }).start();
       
       onInteractionEnd?.();
+      
+      // Trigger auto-advance after interaction ends
+      triggerAutoAdvance();
     },
   });
 
@@ -105,16 +127,25 @@ export default function OnboardingSliderCard({
     RNAnimated.spring(thumbPosition, {
       toValue: targetPosition,
       useNativeDriver: false,
-      tension: 150,
+      tension: 200,
       friction: 8,
     }).start();
     
     RNAnimated.timing(trackProgress, {
       toValue: value / 100,
-      duration: 200,
+      duration: 300,
       useNativeDriver: false,
     }).start();
   }, [value, sliderWidth]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimer.current) {
+        clearTimeout(autoAdvanceTimer.current);
+      }
+    };
+  }, []);
 
   return (
     <View style={styles.card}>
@@ -162,10 +193,14 @@ export default function OnboardingSliderCard({
         </View>
       </View>
       
-      {/* Labels */}
+      {/* Labels - Properly balanced as requested */}
       <View style={styles.labelsContainer}>
-        <Text style={styles.leftLabel}>{leftLabel}</Text>
-        <Text style={styles.rightLabel}>{rightLabel}</Text>
+        <View style={styles.labelWrapper}>
+          <Text style={styles.leftLabel}>{leftLabel}</Text>
+        </View>
+        <View style={styles.labelWrapper}>
+          <Text style={styles.rightLabel}>{rightLabel}</Text>
+        </View>
       </View>
     </View>
   );
@@ -194,7 +229,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 26,
     fontFamily: 'Inter-Regular',
-    color: '#1e293b', // slate-800
+    color: '#1e293b',
     textAlign: 'center',
     marginBottom: 40,
     letterSpacing: -0.2,
@@ -209,61 +244,61 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   trackBackground: {
-    height: 6,
-    backgroundColor: '#e2e8f0', // slate-200
-    borderRadius: 3,
+    height: 4,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 2,
     position: 'absolute',
     left: 0,
     right: 0,
   },
   trackProgress: {
-    height: 6,
-    backgroundColor: '#3b82f6', // blue-500
-    borderRadius: 3,
+    height: 4,
+    backgroundColor: '#3b82f6',
+    borderRadius: 2,
     position: 'absolute',
     left: 0,
   },
   thumb: {
     position: 'absolute',
-    width: 28,
-    height: 28,
-    marginLeft: -14,
-    marginTop: -11,
+    width: 24,
+    height: 24,
+    marginLeft: -12,
+    marginTop: -10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   thumbInner: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#3b82f6', // blue-500
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#3b82f6',
     shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 6,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#ffffff',
   },
   labelsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+  },
+  labelWrapper: {
+    width: '50%', // Equal width containers as requested
     paddingHorizontal: 8,
   },
   leftLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#64748b', // slate-500
-    textAlign: 'left',
-    flex: 1,
-    lineHeight: 20,
+    color: '#64748b',
+    textAlign: 'center', // Center within the container
+    lineHeight: 18,
   },
   rightLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Regular',
-    color: '#64748b', // slate-500
-    textAlign: 'right',
-    flex: 1,
-    lineHeight: 20,
+    color: '#64748b',
+    textAlign: 'center', // Center within the container
+    lineHeight: 18,
   },
 });
