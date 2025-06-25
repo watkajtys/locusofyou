@@ -45,15 +45,15 @@ export default function ChatScreen() {
   const avatarOpacity = useSharedValue(0);
   const avatarScale = useSharedValue(0.8);
   const glowOpacity = useSharedValue(0);
-  const headerOpacity = useSharedValue(0);
+  const headerOpacity = useSharedValue(1); // Initialize to 1 (fully opaque)
+  const inputOpacity = useSharedValue(1); // Initialize to 1 for immediate visibility
 
   useEffect(() => {
     // Initialize chat with welcome message based on coaching style
     const welcomeMessage = getWelcomeMessage(coachingStyle);
     
     setTimeout(() => {
-      // Animate header and avatar
-      headerOpacity.value = withTiming(1, { duration: 600 });
+      // Animate avatar
       avatarOpacity.value = withTiming(1, { duration: 800 });
       avatarScale.value = withTiming(1, { duration: 800 });
       
@@ -210,6 +210,10 @@ export default function ChatScreen() {
     opacity: headerOpacity.value,
   }));
 
+  const inputAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: inputOpacity.value,
+  }));
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -217,7 +221,7 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <Animated.View style={[styles.header, headerAnimatedStyle]}>
+        <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
@@ -288,7 +292,7 @@ export default function ChatScreen() {
         </ScrollView>
 
         {/* Input */}
-        <View style={styles.inputContainer}>
+        <Animated.View style={[styles.inputContainer, inputAnimatedStyle]}>
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.textInput}
