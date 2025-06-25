@@ -177,10 +177,10 @@ export default function WelcomeScreen() {
           <View style={styles.chatSection}>
             <View style={styles.chatContainer}>
               <Animated.View style={[styles.chatBubbleContainer, firstBubbleAnimatedStyle]}>
-                <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
+                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
                   {isFirstBubbleLoading ? (
-                    <TypingIndicator isVisible={true} />
+                    <TypingIndicator isVisible={true} showBubble={false} />
                   ) : (
                     <Text style={styles.chatText}>Welcome.</Text>
                   )}
@@ -188,10 +188,10 @@ export default function WelcomeScreen() {
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, secondBubbleAnimatedStyle]}>
-                <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
+                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
                   {isSecondBubbleLoading ? (
-                    <TypingIndicator isVisible={true} />
+                    <TypingIndicator isVisible={true} showBubble={false} />
                   ) : (
                     <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace.</Text>
                   )}
@@ -199,10 +199,10 @@ export default function WelcomeScreen() {
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, thirdBubbleAnimatedStyle]}>
-                <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
+                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
                   {isThirdBubbleLoading ? (
-                    <TypingIndicator isVisible={true} />
+                    <TypingIndicator isVisible={true} showBubble={false} />
                   ) : (
                     <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
                   )}
@@ -343,34 +343,29 @@ const styles = StyleSheet.create({
   chatContainer: {
     width: '100%',
     marginBottom: 32,
+    alignItems: 'flex-start', // Added to align bubbles to the left
   },
   chatBubbleContainer: {
-    position: 'relative',
-    marginBottom: 8,
+    // Removed position: 'relative' as bubbleGlow is removed
+    marginBottom: 16, // Matched to chat.tsx messageContainer
+    maxWidth: '80%', // Added from chat.tsx messageBubble
+    alignItems: 'flex-start', // Ensures bubble itself is aligned left in its container if container is wider
   },
-  bubbleGlow: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#0284C7',
-    top: 0,
-    left: 0,
-  },
+  // bubbleGlow: removed
   chatBubble: {
     backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16, // Matched to chat.tsx messageBubble
+    paddingVertical: 12,   // Matched to chat.tsx messageBubble
     borderRadius: 20,
+    borderBottomLeftRadius: 6, // Added from chat.tsx aiMessage for the "tail"
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 }, // Matched to chat.tsx aiMessage
+    shadowOpacity: 0.1,                   // Matched to chat.tsx aiMessage
+    shadowRadius: 3,                      // Matched to chat.tsx aiMessage
+    elevation: 2,                         // Matched to chat.tsx aiMessage
   },
   chatText: {
-    fontSize: 16,
+    fontSize: 16, // Matched to chat.tsx messageText
     fontFamily: 'Inter-Regular',
     color: '#0C4A6E',
     lineHeight: 24,

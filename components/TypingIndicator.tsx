@@ -13,9 +13,10 @@ import Animated, {
 
 interface TypingIndicatorProps {
   isVisible: boolean;
+  showBubble?: boolean; // New prop
 }
 
-export default function TypingIndicator({ isVisible }: TypingIndicatorProps) {
+export default function TypingIndicator({ isVisible, showBubble = true }: TypingIndicatorProps) {
   // Animation values for each dot
   const dot1Opacity = useSharedValue(0.3);
   const dot2Opacity = useSharedValue(0.3);
@@ -109,24 +110,43 @@ export default function TypingIndicator({ isVisible }: TypingIndicatorProps) {
     return null;
   }
 
+  const dots = (
+    <View style={styles.dotsContainer}>
+      <Animated.View style={[styles.dot, dot1AnimatedStyle]} />
+      <Animated.View style={[styles.dot, dot2AnimatedStyle]} />
+      <Animated.View style={[styles.dot, dot3AnimatedStyle]} />
+    </View>
+  );
+
+  if (!showBubble) {
+    return (
+      <Animated.View style={[styles.containerNoBubble, containerAnimatedStyle]}>
+        {dots}
+      </Animated.View>
+    );
+  }
+
   return (
-    <Animated.View style={[styles.container, containerAnimatedStyle]}>
+    <Animated.View style={[styles.containerWithBubble, containerAnimatedStyle]}>
       <View style={styles.bubble}>
-        <View style={styles.dotsContainer}>
-          <Animated.View style={[styles.dot, dot1AnimatedStyle]} />
-          <Animated.View style={[styles.dot, dot2AnimatedStyle]} />
-          <Animated.View style={[styles.dot, dot3AnimatedStyle]} />
-        </View>
+        {dots}
       </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  containerWithBubble: { // Renamed from 'container'
     alignItems: 'flex-start',
-    marginBottom: 8,
-    width: '100%',
+    marginBottom: 8, // This might need adjustment or removal if parent handles margin
+    width: '100%', // This might also be an issue if parent bubble has fixed width
+  },
+  containerNoBubble: { // New style for when bubble is not shown by indicator itself
+    alignItems: 'center', // Center dots if no bubble from this component
+    justifyContent: 'center',
+    // No margin here, parent bubble will handle it.
+    // No width here, it should fit content.
+    // Padding will be provided by the parent bubble in WelcomeScreen
   },
   bubble: {
     backgroundColor: 'white',
@@ -139,7 +159,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-    minWidth: 70,
+    minWidth: 70, // Ensures the bubble has some width for the dots
   },
   dotsContainer: {
     flexDirection: 'row',
