@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Brain, Microscope, Heart, Shield } from 'lucide-react-native';
-import TypingIndicator from '@/components/TypingIndicator'; // Import TypingIndicator
+import TypingIndicator from '@/components/TypingIndicator';
 
 const { width, height } = Dimensions.get('window');
 
@@ -39,7 +39,7 @@ export default function WelcomeScreen() {
     // Start the animation sequence
     setTimeout(() => {
       // Avatar animation (200ms delay)
-      avatarOpacity.value = withTiming(1, { duration: 800 }); // Avatar animation itself can remain 800ms
+      avatarOpacity.value = withTiming(1, { duration: 800 });
       avatarScale.value = withTiming(1, { duration: 800 });
       
       // Start glow animation
@@ -54,45 +54,39 @@ export default function WelcomeScreen() {
 
       // First bubble (after avatar)
       setTimeout(() => {
-        // Show first bubble container, loading indicator will be inside
-        firstBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
-        firstBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
-        // Simulate loading time for first bubble
+        firstBubbleOpacity.value = withTiming(1, { duration: 400 });
+        firstBubbleTranslateY.value = withTiming(0, { duration: 400 });
         setTimeout(() => {
           setIsFirstBubbleLoading(false);
-        }, 600); // Faster loading
+        }, 600);
 
         // Second bubble (800ms after first bubble text appears)
         setTimeout(() => {
-          // Show second bubble container
-          secondBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
-          secondBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
-          // Simulate loading time for second bubble
+          secondBubbleOpacity.value = withTiming(1, { duration: 400 });
+          secondBubbleTranslateY.value = withTiming(0, { duration: 400 });
           setTimeout(() => {
             setIsSecondBubbleLoading(false);
-          }, 700); // Faster loading
+          }, 700);
 
           // Trust pillars (same time as second bubble container appears)
-          pillarsOpacity.value = withTiming(1, { duration: 800 }); // Pillars can keep their pace
+          pillarsOpacity.value = withTiming(1, { duration: 800 });
 
           // Third bubble and cards (800ms after second bubble text appears)
           setTimeout(() => {
-            // Show third bubble container
-            thirdBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
-            thirdBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
-            // Simulate loading time for third bubble
+            thirdBubbleOpacity.value = withTiming(1, { duration: 400 });
+            thirdBubbleTranslateY.value = withTiming(0, { duration: 400 });
             setTimeout(() => {
               setIsThirdBubbleLoading(false);
-            }, 600); // Faster loading
+            }, 600);
 
             setTimeout(() => {
-              cardsOpacity.value = withTiming(1, { duration: 600 }); // Cards animation can remain 600ms
+              cardsOpacity.value = withTiming(1, { duration: 600 });
               cardsTranslateY.value = withTiming(0, { duration: 600 });
-            }, 300); // This delay is for cards after third bubble text appears
-          }, 800 + 700); // Delay from previous bubble text + current loading
-        }, 800 + 600); // Delay from previous bubble text + current loading
-      }, 400); // Faster appearance after avatar
-    }, 200); // Faster initial delay
+            }, 300);
+          }, 800 + 700);
+        }, 800 + 600);
+      }, 400);
+    }, 200);
   }, []);
 
   // Animated styles
@@ -131,10 +125,10 @@ export default function WelcomeScreen() {
 
   const handleCardPress = (cardType: string) => {
     setSelectedCard(cardType);
-    // Navigate to chat interface after a brief delay
+    // Navigate to onboarding instead of chat
     setTimeout(() => {
       router.push({
-        pathname: '/chat',
+        pathname: '/onboarding',
         params: { coachingStyle: cardType }
       });
     }, 300);
@@ -177,7 +171,6 @@ export default function WelcomeScreen() {
           <View style={styles.chatSection}>
             <View style={styles.chatContainer}>
               <Animated.View style={[styles.chatBubbleContainer, firstBubbleAnimatedStyle]}>
-                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
                   {isFirstBubbleLoading ? (
                     <TypingIndicator isVisible={true} showBubble={false} />
@@ -188,7 +181,6 @@ export default function WelcomeScreen() {
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, secondBubbleAnimatedStyle]}>
-                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
                   {isSecondBubbleLoading ? (
                     <TypingIndicator isVisible={true} showBubble={false} />
@@ -199,7 +191,6 @@ export default function WelcomeScreen() {
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, thirdBubbleAnimatedStyle]}>
-                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
                   {isThirdBubbleLoading ? (
                     <TypingIndicator isVisible={true} showBubble={false} />
@@ -343,29 +334,27 @@ const styles = StyleSheet.create({
   chatContainer: {
     width: '100%',
     marginBottom: 32,
-    alignItems: 'flex-start', // Added to align bubbles to the left
+    alignItems: 'flex-start',
   },
   chatBubbleContainer: {
-    // Removed position: 'relative' as bubbleGlow is removed
-    marginBottom: 16, // Matched to chat.tsx messageContainer
-    maxWidth: '80%', // Added from chat.tsx messageBubble
-    alignItems: 'flex-start', // Ensures bubble itself is aligned left in its container if container is wider
+    marginBottom: 16,
+    maxWidth: '80%',
+    alignItems: 'flex-start',
   },
-  // bubbleGlow: removed
   chatBubble: {
     backgroundColor: 'white',
-    paddingHorizontal: 16, // Matched to chat.tsx messageBubble
-    paddingVertical: 12,   // Matched to chat.tsx messageBubble
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 20,
-    borderBottomLeftRadius: 6, // Added from chat.tsx aiMessage for the "tail"
+    borderBottomLeftRadius: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, // Matched to chat.tsx aiMessage
-    shadowOpacity: 0.1,                   // Matched to chat.tsx aiMessage
-    shadowRadius: 3,                      // Matched to chat.tsx aiMessage
-    elevation: 2,                         // Matched to chat.tsx aiMessage
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   chatText: {
-    fontSize: 16, // Matched to chat.tsx messageText
+    fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#0C4A6E',
     lineHeight: 24,

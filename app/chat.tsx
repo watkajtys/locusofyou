@@ -36,6 +36,16 @@ interface Message {
   actualText?: string;
 }
 
+interface OnboardingData {
+  coachingStyle: string;
+  regulatoryFocus: 'promotion' | 'prevention' | null;
+  locusOfControl: 'internal' | 'external' | null;
+  mindset: 'fixed' | 'growth' | null;
+  extraversion: number;
+  agreeableness: number;
+  currentFocus: string;
+}
+
 const AIMessageBubble = ({ 
   message, 
   isLoading = false, 
@@ -74,21 +84,27 @@ const AIMessageBubble = ({
 };
 
 export default function ChatScreen() {
-  const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
+  const params = useLocalSearchParams<{ 
+    coachingStyle: string; 
+    onboardingData?: string; 
+  }>();
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
   const initializedRef = useRef(false);
+
+  // Parse onboarding data
+  const onboardingData: OnboardingData | null = params.onboardingData 
+    ? JSON.parse(params.onboardingData) 
+    : null;
 
   // Animation values
   const backgroundScale = useSharedValue(1);
   const backgroundRotation = useSharedValue(0);
 
   useEffect(() => {
-    // Prevent duplicate initialization
-    if (initializedRef.current) {
-      return;
-    }
+    if (initializedRef.current) return;
     initializedRef.current = true;
 
     // Start breathing animation for background
@@ -116,11 +132,10 @@ export default function ChatScreen() {
       false
     );
 
-    // Show typing indicator immediately, no delay
+    // Generate personalized welcome message
+    const welcomeText = generatePersonalizedWelcome(onboardingData);
     const welcomeMessageId = "welcome-msg";
-    const welcomeText = getWelcomeMessage(coachingStyle);
     
-    // Add loading message immediately
     addMessage({
       text: "",
       isUser: false,
@@ -128,7 +143,6 @@ export default function ChatScreen() {
       actualText: welcomeText
     }, welcomeMessageId);
 
-    // Show actual text after loading delay
     setTimeout(() => {
       updateMessage(welcomeMessageId, {
         text: welcomeText,
@@ -136,45 +150,83 @@ export default function ChatScreen() {
         actualText: undefined
       });
 
-      // Add follow-up message with typing indicator immediately after first message appears
-      setTimeout(() => {
-        const followUpMessageId = "followup-msg";
-        const followUpText = getFollowUpMessage(coachingStyle);
-        
-        // Add loading message immediately
-        addMessage({
-          text: "",
-          isUser: false,
-          isLoading: true,
-          actualText: followUpText
-        }, followUpMessageId);
-
-        // Show follow-up text after loading delay
+      // Add personalized follow-up based on their current focus
+      if (onboardingData?.currentFocus) {
         setTimeout(() => {
-          updateMessage(followUpMessageId, {
-            text: followUpText,
-            isLoading: false,
-            actualText: undefined
-          });
-        }, 1200);
-      }, 800);
-    }, 1000);
-  }, [coachingStyle]);
+          const followUpText = generatePersonalizedFollowUp(onboardingData);
+          const followUpMessageId = "followup-msg";
+          
+          addMessage({
+            text: "",
+            isUser: false,
+            isLoading: true,
+            actualText: followUpText
+          }, followUpMessageId);
 
-  const getWelcomeMessage = (style: string) => {
-    if (style === 'planner') {
-      return "Perfect! I can see you value structure and detailed planning. I'll help you create clear, actionable steps toward your goals while respecting your need for organization.";
-    } else {
-      return "Excellent choice! I appreciate your flexible approach. I'll adapt my coaching style to meet you where you are, providing guidance that flows with your natural rhythm.";
+          setTimeout(() => {
+            updateMessage(followUpMessageId, {
+              text: followUpText,
+              isLoading: false,
+              actualText: undefined
+            });
+          }, 1500);
+        }, 1000);
+      }
+    }, 1200);
+  }, [onboardingData]);
+
+  const generatePersonalizedWelcome = (data: OnboardingData | null) => {
+    if (!data) {
+      return "Welcome! I'm here to support you on your journey.";
     }
+
+    const { coachingStyle, regulatoryFocus, locusOfControl, mindset } = data;
+    
+    let message = "";
+    
+    if (coachingStyle === 'planner') {
+      message = "Perfect! I can see you value structure and detailed planning. ";
+      if (regulatoryFocus === 'promotion') {
+        message += "Your focus on achieving positive outcomes combined with your organized approach is a powerful combination. ";
+      } else if (regulatoryFocus === 'prevention') {
+        message += "Your careful approach to preventing problems shows wisdom and foresight. ";
+      }
+    } else {
+      message = "Excellent! I appreciate your flexible, adaptive approach. ";
+      if (regulatoryFocus === 'promotion') {
+        message += "Your openness to opportunity while striving for positive outcomes creates exciting possibilities. ";
+      } else if (regulatoryFocus === 'prevention') {
+        message += "Your balanced approach of staying flexible while being mindful of challenges shows great emotional intelligence. ";
+      }
+    }
+
+    if (mindset === 'growth') {
+      message += "I'm especially drawn to your belief in development and growth - that's the foundation of all meaningful change.";
+    } else if (mindset === 'fixed') {
+      message += "I respect your recognition of natural strengths, and I'm here to help you leverage them effectively.";
+    }
+
+    return message;
   };
 
-  const getFollowUpMessage = (style: string) => {
-    if (style === 'planner') {
-      return "Let's start by identifying one specific goal you'd like to work on. What's something you've been wanting to accomplish but haven't quite gotten started on?";
+  const generatePersonalizedFollowUp = (data: OnboardingData) => {
+    const { currentFocus, extraversion, agreeableness } = data;
+    
+    let message = `I hear that ${currentFocus.toLowerCase()} is what feels most important to you right now. `;
+    
+    if (extraversion > 60) {
+      message += "Given your collaborative nature, have you considered who else might be invested in this outcome? ";
     } else {
-      return "I'm curious - what's one area of your life where you feel stuck or would like some gentle guidance? We can explore this together at whatever pace feels right.";
+      message += "I sense you might benefit from some quiet reflection on this. ";
     }
+
+    if (agreeableness > 60) {
+      message += "Your thoughtful approach to others' perspectives will be valuable here. What would success look like not just for you, but for everyone involved?";
+    } else {
+      message += "Your direct approach and willingness to challenge assumptions could be exactly what's needed. What's your gut telling you about the best path forward?";
+    }
+
+    return message;
   };
 
   const addMessage = (messageData: Omit<Message, 'timestamp' | 'id'>, id?: string) => {
@@ -207,11 +259,9 @@ export default function ChatScreen() {
       const currentInput = inputText;
       setInputText('');
       
-      // Add AI response with typing indicator immediately
       const aiMessageId = Date.now().toString() + "-ai";
-      const responseText = generateAIResponse(currentInput, coachingStyle);
+      const responseText = generateAIResponse(currentInput, onboardingData);
       
-      // Show typing indicator immediately, no delay
       addMessage({
         text: "",
         isUser: false,
@@ -219,7 +269,6 @@ export default function ChatScreen() {
         actualText: responseText
       }, aiMessageId);
 
-      // Show actual response after loading delay
       setTimeout(() => {
         updateMessage(aiMessageId, {
           text: responseText,
@@ -230,26 +279,57 @@ export default function ChatScreen() {
     }
   };
 
-  const generateAIResponse = (userMessage: string, style: string) => {
-    const responses = {
-      planner: [
-        "That's a great insight. Let's break this down into smaller, manageable steps. What would be the very first action you could take?",
-        "I hear you. It sounds like having a clear plan would help here. What specific outcome are you hoping to achieve?",
-        "Thank you for sharing that. Let's create a structured approach. What resources or support do you think you'll need?",
-        "That makes sense. When you think about this goal, what timeline feels realistic and achievable for you?",
-        "I appreciate your thoughtfulness. Let's identify the key milestones that would mark progress toward this goal.",
-      ],
-      adapter: [
-        "I appreciate you sharing that with me. What feels most important to you right now in this situation?",
-        "That sounds challenging. How are you feeling about all of this? Sometimes our emotions can guide us toward the right path.",
-        "I'm hearing that this matters to you. What would it look like if you took just one small step forward?",
-        "Thank you for being so open. What do you think your intuition is telling you about this?",
-        "That resonates with me. What would feel like a gentle first step that honors where you are right now?",
-      ]
-    };
+  const generateAIResponse = (userMessage: string, data: OnboardingData | null) => {
+    if (!data) {
+      return "I appreciate you sharing that. Tell me more about what's driving this for you?";
+    }
 
-    const styleResponses = responses[style as keyof typeof responses] || responses.adapter;
-    return styleResponses[Math.floor(Math.random() * styleResponses.length)];
+    const { coachingStyle, regulatoryFocus, locusOfControl, mindset, extraversion, agreeableness } = data;
+    
+    const responses = [];
+    
+    // Base responses based on coaching style
+    if (coachingStyle === 'planner') {
+      responses.push("Let me help you break this down into actionable steps.");
+      responses.push("What specific outcome are you hoping to achieve here?");
+      responses.push("This sounds like something we can create a structured approach for.");
+    } else {
+      responses.push("I'm curious about what this means to you personally.");
+      responses.push("What feels like the right next step from where you are now?");
+      responses.push("Let's explore this together and see what emerges.");
+    }
+    
+    // Add personality-based responses
+    if (regulatoryFocus === 'promotion') {
+      responses.push("What opportunities do you see in this situation?");
+      responses.push("How might this help you move toward your ideal outcome?");
+    } else if (regulatoryFocus === 'prevention') {
+      responses.push("What potential challenges should we be mindful of?");
+      responses.push("How can we make sure you feel secure as you move forward?");
+    }
+    
+    if (mindset === 'growth') {
+      responses.push("What might you learn from this experience?");
+      responses.push("How could this challenge help you develop new capabilities?");
+    }
+    
+    if (extraversion > 60) {
+      responses.push("Who else might have insights that could help with this?");
+      responses.push("Have you had a chance to talk this through with someone you trust?");
+    } else {
+      responses.push("What does your inner wisdom tell you about this?");
+      responses.push("When you sit quietly with this, what comes up for you?");
+    }
+    
+    if (agreeableness > 60) {
+      responses.push("How do you think others might be affected by this?");
+      responses.push("What would feel like a win-win approach here?");
+    } else {
+      responses.push("What's your honest assessment of what needs to happen?");
+      responses.push("Sometimes the direct path is the kindest - what would that look like?");
+    }
+
+    return responses[Math.floor(Math.random() * responses.length)];
   };
 
   // Animated styles
@@ -260,9 +340,20 @@ export default function ChatScreen() {
     ],
   }));
 
+  const getHeaderTitle = () => {
+    if (!onboardingData) return 'AI Coach';
+    
+    const { coachingStyle, regulatoryFocus, extraversion } = onboardingData;
+    
+    if (coachingStyle === 'planner') {
+      return extraversion > 60 ? 'Collaborative Strategist' : 'Thoughtful Planner';
+    } else {
+      return regulatoryFocus === 'promotion' ? 'Opportunity Guide' : 'Gentle Navigator';
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Animated Background */}
       <Animated.View style={[styles.backgroundContainer, backgroundAnimatedStyle]}>
         <LinearGradient
           colors={['#e0f2fe', '#dbeafe', '#f0f9ff']}
@@ -277,7 +368,6 @@ export default function ChatScreen() {
           style={styles.keyboardAvoid}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* Header - No animations */}
           <View style={styles.header}>
             <TouchableOpacity 
               style={styles.backButton}
@@ -287,9 +377,7 @@ export default function ChatScreen() {
             </TouchableOpacity>
             
             <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>
-                {coachingStyle === 'planner' ? 'Structured Support' : 'Adaptive Guidance'}
-              </Text>
+              <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
               <View style={styles.avatarContainer}>
                 <LinearGradient
                   colors={['#a855f7', '#6366f1']}
@@ -303,7 +391,6 @@ export default function ChatScreen() {
             </View>
           </View>
 
-          {/* Chat Messages */}
           <ScrollView 
             ref={scrollViewRef}
             style={styles.messagesContainer}
@@ -322,15 +409,13 @@ export default function ChatScreen() {
                   key={message.id} 
                   message={message.text} 
                   isLoading={message.isLoading}
-                  delay={0} // No delay for individual message animations
+                  delay={0}
                 />
               )
             ))}
           </ScrollView>
 
-          {/* Input Area - Fully transparent container */}
           <View style={styles.inputContainer}>
-            {/* Input field container with white background and styling */}
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
@@ -341,7 +426,6 @@ export default function ChatScreen() {
                 multiline
                 maxLength={500}
               />
-              {/* Square send button with rounded corners and right arrow */}
               <TouchableOpacity
                 style={[
                   styles.sendButton,
@@ -411,9 +495,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#334155',
   },
-  avatarContainer: {
-    // No animation styles
-  },
+  avatarContainer: {},
   avatar: {
     width: 40,
     height: 40,
@@ -446,7 +528,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    minHeight: 44, // Ensure consistent height for typing indicator
+    minHeight: 44,
   },
   aiMessageText: {
     fontSize: 16,
@@ -472,7 +554,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#ffffff',
   },
-  // Fully transparent input container
   inputContainer: {
     position: 'absolute',
     bottom: 0,
@@ -480,19 +561,17 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    backgroundColor: 'transparent', // Fully transparent
-    // No shadows or background effects
+    backgroundColor: 'transparent',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff', // White background for input field
-    borderRadius: 24, // Fully rounded corners
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#e2e8f0', // Subtle border
+    borderColor: '#e2e8f0',
     paddingHorizontal: 4,
     paddingVertical: 4,
-    // Enhanced shadow for tangible, elevated feel
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -511,11 +590,10 @@ const styles = StyleSheet.create({
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 12, // Square with rounded corners instead of fully circular
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
-    // Enhanced shadow for gentle elevation
     shadowColor: '#3b82f6',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -523,9 +601,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   sendButtonActive: {
-    backgroundColor: '#3b82f6', // Vibrant blue for clear call to action
+    backgroundColor: '#3b82f6',
   },
   sendButtonInactive: {
-    backgroundColor: '#e2e8f0', // Subtle inactive state
+    backgroundColor: '#e2e8f0',
   },
 });
