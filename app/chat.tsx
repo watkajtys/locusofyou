@@ -19,21 +19,47 @@ import Animated, {
   withDelay,
   withSequence,
   withRepeat,
+  Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain, Send, ArrowLeft } from 'lucide-react-native';
+import { Brain, Send, ChevronLeft } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
 
 const { width, height } = Dimensions.get('window');
 
 interface Message {
   id: string;
-  text: string; // Will be empty or "..." during loading for AI messages
+  text: string;
   isUser: boolean;
   timestamp: Date;
   isLoading?: boolean;
-  actualText?: string; // Stores the real text during AI message loading
+  actualText?: string;
 }
+
+const AIMessageBubble = ({ message, delay = 0 }: { message: string; delay?: number }) => {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(30);
+
+  useEffect(() => {
+    setTimeout(() => {
+      opacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
+      translateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
+    }, delay);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.aiMessageContainer, animatedStyle]}>
+      <View style={styles.aiMessageBubble}>
+        <Text style={styles.aiMessageText}>{message}</Text>
+      </View>
+    </Animated.View>
+  );
+};
 
 export default function ChatScreen() {
   const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
@@ -42,63 +68,56 @@ export default function ChatScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Animation values
+  const backgroundScale = useSharedValue(1);
+  const backgroundRotation = useSharedValue(0);
   const avatarOpacity = useSharedValue(0);
   const avatarScale = useSharedValue(0.8);
-  const glowOpacity = useSharedValue(0);
-  const headerOpacity = useSharedValue(1); // Initialize to 1 (fully opaque)
-  const inputOpacity = useSharedValue(1); // Initialize to 1 for immediate visibility
+  const headerOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // Initialize chat with welcome message based on coaching style
-    const welcomeMessage = getWelcomeMessage(coachingStyle);
-    
+    // Start breathing animation for background
+    backgroundScale.value = withRepeat(
+      withSequence(
+        withTiming(1.02, { 
+          duration: 9000, 
+          easing: Easing.inOut(Easing.sin) 
+        }),
+        withTiming(1, { 
+          duration: 9000, 
+          easing: Easing.inOut(Easing.sin) 
+        })
+      ),
+      -1,
+      false
+    );
+
+    backgroundRotation.value = withRepeat(
+      withTiming(360, { 
+        duration: 60000, 
+        easing: Easing.linear 
+      }),
+      -1,
+      false
+    );
+
+    // Animate header and avatar
     setTimeout(() => {
-      // Animate avatar
+      headerOpacity.value = withTiming(1, { duration: 800 });
       avatarOpacity.value = withTiming(1, { duration: 800 });
       avatarScale.value = withTiming(1, { duration: 800 });
-      
-      // Start glow animation
-      glowOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.6, { duration: 2000 }),
-          withTiming(0.2, { duration: 2000 })
-        ),
-        -1,
-        true
-      );
-
-      // Add welcome message after animation
-      setTimeout(() => {
-        const welcomeMsgId = "initial-welcome";
-        const actualWelcomeText = getWelcomeMessage(coachingStyle); // Get the final text
-        addMessage({
-          text: "", // Displayed while loading
-          isUser: false,
-          isLoading: true,
-          actualText: actualWelcomeText // Store final text
-        }, welcomeMsgId);
-
-        setTimeout(() => { // Simulate loading delay
-          updateMessage(welcomeMsgId, { text: actualWelcomeText, isLoading: false, actualText: undefined });
-
-          // Add follow-up message
-          setTimeout(() => {
-            const followUpMsgId = "initial-followup";
-            const actualFollowUpText = getFollowUpMessage(coachingStyle); // Get the final text
-            addMessage({
-              text: "", // Displayed while loading
-              isUser: false,
-              isLoading: true,
-              actualText: actualFollowUpText // Store final text
-            }, followUpMsgId);
-
-            setTimeout(() => { // Simulate loading delay
-              updateMessage(followUpMsgId, { text: actualFollowUpText, isLoading: false, actualText: undefined });
-            }, 1200); // Loading time for follow-up
-          }, 800); // Delay between welcome and follow-up message appearance
-        }, 1000); // Loading time for welcome message
-      }, 1000); // Delay after header/avatar animation
     }, 300);
+
+    // Initialize chat with welcome messages
+    setTimeout(() => {
+      const welcomeMessage = getWelcomeMessage(coachingStyle);
+      const followUpMessage = getFollowUpMessage(coachingStyle);
+      
+      addMessage({ text: welcomeMessage, isUser: false });
+      
+      setTimeout(() => {
+        addMessage({ text: followUpMessage, isUser: false });
+      }, 2000);
+    }, 1500);
   }, [coachingStyle]);
 
   const getWelcomeMessage = (style: string) => {
@@ -117,27 +136,15 @@ export default function ChatScreen() {
     }
   };
 
-  const addMessage = (messageData: Omit<Message, 'timestamp' | 'id'>, id?: string) => {
+  const addMessage = (messageData: Omit<Message, 'timestamp' | 'id'>) => {
     const newMessage: Message = {
-      id: id || Date.now().toString(),
+      id: Date.now().toString(),
       timestamp: new Date(),
       ...messageData,
     };
     
     setMessages(prev => [...prev, newMessage]);
     
-    // Scroll to bottom after message is added
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-    return newMessage.id; // Return the ID
-  };
-
-  const updateMessage = (id: string, updates: Partial<Message>) => {
-    setMessages(prev =>
-      prev.map(msg => (msg.id === id ? { ...msg, ...updates } : msg))
-    );
-    // Scroll to bottom after message is updated (e.g., text revealed)
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -146,35 +153,17 @@ export default function ChatScreen() {
   const handleSendMessage = () => {
     if (inputText.trim()) {
       addMessage({ text: inputText.trim(), isUser: true });
-      const currentInput = inputText; // Capture before clearing
+      const currentInput = inputText;
       setInputText('');
       
-      // No longer use global isTyping for individual message loading
-      // setIsTyping(true);
-      
-      const aiMessageId = Date.now().toString() + "-ai";
-      const responseText = generateAIResponse(currentInput, coachingStyle); // Generate text first
-
-      addMessage({
-        text: "", // Displayed while loading
-        isUser: false,
-        isLoading: true,
-        actualText: responseText // Store final text
-      }, aiMessageId);
-
-      // Simulate AI response delay (e.g. network, computation)
       setTimeout(() => {
-        updateMessage(aiMessageId, {
-          text: responseText,
-          isLoading: false,
-          actualText: undefined // Clear placeholder
-        });
-      }, 1500 + Math.random() * 1500);
+        const response = generateAIResponse(currentInput, coachingStyle);
+        addMessage({ text: response, isUser: false });
+      }, 1000 + Math.random() * 1500);
     }
   };
 
   const generateAIResponse = (userMessage: string, style: string) => {
-    // Simple response generation based on coaching style
     const responses = {
       planner: [
         "That's a great insight. Let's break this down into smaller, manageable steps. What would be the very first action you could take?",
@@ -197,284 +186,284 @@ export default function ChatScreen() {
   };
 
   // Animated styles
-  const avatarAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: avatarOpacity.value,
-    transform: [{ scale: avatarScale.value }],
-  }));
-
-  const glowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
+  const backgroundAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: backgroundScale.value },
+      { rotate: `${backgroundRotation.value}deg` }
+    ],
   }));
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: headerOpacity.value,
   }));
 
-  const inputAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: inputOpacity.value,
+  const avatarAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: avatarOpacity.value,
+    transform: [{ scale: avatarScale.value }],
   }));
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#0C4A6E" strokeWidth={2} />
-          </TouchableOpacity>
-          
-          <View style={styles.headerContent}>
-            <Animated.View style={[styles.headerAvatarContainer, avatarAnimatedStyle]}>
-              <Animated.View style={[styles.headerAvatarGlow, glowAnimatedStyle]} />
-              <LinearGradient
-                colors={['#8B5CF6', '#A855F7', '#C084FC']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.headerAvatar}
-              >
-                <Brain size={20} color="white" strokeWidth={2} />
-              </LinearGradient>
-            </Animated.View>
-            <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>AI Coach</Text>
-              <Text style={styles.headerSubtitle}>
+    <View style={styles.container}>
+      {/* Animated Background */}
+      <Animated.View style={[styles.backgroundContainer, backgroundAnimatedStyle]}>
+        <LinearGradient
+          colors={['#e0f2fe', '#dbeafe', '#f0f9ff']}
+          style={styles.backgroundGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      </Animated.View>
+
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoid}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {/* Header */}
+          <Animated.View style={[styles.header, headerAnimatedStyle]}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ChevronLeft size={24} color="#475569" strokeWidth={2} />
+            </TouchableOpacity>
+            
+            <View style={styles.headerContent}>
+              <Text style={styles.headerTitle}>
                 {coachingStyle === 'planner' ? 'Structured Support' : 'Adaptive Guidance'}
               </Text>
+              <Animated.View style={[styles.avatarContainer, avatarAnimatedStyle]}>
+                <LinearGradient
+                  colors={['#a855f7', '#6366f1']}
+                  style={styles.avatar}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Brain size={20} color="#fff" strokeWidth={2} />
+                </LinearGradient>
+              </Animated.View>
             </View>
-          </View>
-        </View>
+          </Animated.View>
 
-        {/* Messages */}
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.messagesContainer}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {messages.map((message) => (
-            <View
-              key={message.id}
-              style={[
-                styles.messageContainer,
-                message.isUser ? styles.userMessageContainer : styles.aiMessageContainer
-              ]}
-            >
-              <View
-                style={[
-                  styles.messageBubble,
-                  message.isUser ? styles.userMessage : styles.aiMessage
-                ]}
-              >
-                {message.isLoading && !message.isUser ? (
-                  <TypingIndicator isVisible={true} showBubble={false} />
-                ) : (
-                  <Text
-                    style={[
-                      styles.messageText,
-                      message.isUser ? styles.userMessageText : styles.aiMessageText
-                    ]}
-                  >
-                    {message.text}
-                  </Text>
-                )}
-              </View>
-            </View>
-          ))}
-          
-          {/* Global Typing Indicator removed, handled by individual messages */}
-          {/* <TypingIndicator isVisible={isTyping} /> */}
-        </ScrollView>
+          {/* Chat Messages */}
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            contentContainerStyle={styles.messagesContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {messages.map((message, index) => (
+              message.isUser ? (
+                <View key={message.id} style={styles.userMessageContainer}>
+                  <View style={styles.userMessageBubble}>
+                    <Text style={styles.userMessageText}>{message.text}</Text>
+                  </View>
+                </View>
+              ) : (
+                <AIMessageBubble 
+                  key={message.id} 
+                  message={message.text} 
+                  delay={index * 400}
+                />
+              )
+            ))}
+          </ScrollView>
 
-        {/* Input */}
-        <Animated.View style={[styles.inputContainer, inputAnimatedStyle]}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Share what's on your mind..."
-              placeholderTextColor="#0C4A6E"
-              multiline
-              maxLength={500}
+          {/* Input Area */}
+          <View style={styles.inputContainer}>
+            <LinearGradient
+              colors={['transparent', '#ffffff']}
+              style={styles.inputGradient}
             />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                inputText.trim() ? styles.sendButtonActive : styles.sendButtonInactive
-              ]}
-              onPress={handleSendMessage}
-              disabled={!inputText.trim()}
-            >
-              <Send 
-                size={20} 
-                color={inputText.trim() ? 'white' : '#BAE6FD'} 
-                strokeWidth={2} 
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.textInput}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder="Share what's on your mind..."
+                placeholderTextColor="#94a3b8"
+                multiline
+                maxLength={500}
               />
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sendButton,
+                  inputText.trim() ? styles.sendButtonActive : styles.sendButtonInactive
+                ]}
+                onPress={handleSendMessage}
+                disabled={!inputText.trim()}
+              >
+                <Send 
+                  size={20} 
+                  color={inputText.trim() ? '#fff' : '#94a3b8'} 
+                  strokeWidth={2} 
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0F9FF',
+    position: 'relative',
+  },
+  backgroundContainer: {
+    position: 'absolute',
+    width: '400%',
+    height: '400%',
+    top: '-150%',
+    left: '-150%',
+    zIndex: -1,
+  },
+  backgroundGradient: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
   },
   keyboardAvoid: {
     flex: 1,
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0F2FE',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    paddingVertical: 16,
   },
   backButton: {
     padding: 8,
-    marginRight: 8,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: 8,
   },
-  headerAvatarContainer: {
-    position: 'relative',
-    marginRight: 12,
+  headerTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#334155',
   },
-  headerAvatarGlow: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#0284C7',
-    top: -2,
-    left: -2,
-    opacity: 0.2,
+  avatarContainer: {
+    // Avatar animation container
   },
-  headerAvatar: {
+  avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerText: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    color: '#0C4A6E',
-    lineHeight: 20,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    fontFamily: 'Inter-Regular',
-    color: '#0C4A6E',
-    opacity: 0.6,
-    lineHeight: 16,
-  },
   messagesContainer: {
     flex: 1,
+    paddingTop: 96,
+    paddingBottom: 128,
   },
   messagesContent: {
     paddingHorizontal: 16,
     paddingVertical: 20,
   },
-  messageContainer: {
-    marginBottom: 16,
-  },
-  userMessageContainer: {
-    alignItems: 'flex-end',
-  },
   aiMessageContainer: {
     alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  messageBubble: {
-    maxWidth: '80%',
+  aiMessageBubble: {
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
-  },
-  userMessage: {
-    backgroundColor: '#0284C7',
-    borderBottomRightRadius: 6,
-  },
-  aiMessage: {
-    backgroundColor: 'white',
     borderBottomLeftRadius: 6,
+    maxWidth: '85%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  messageText: {
+  aiMessageText: {
     fontSize: 16,
     lineHeight: 22,
     fontFamily: 'Inter-Regular',
+    color: '#1e293b',
   },
-  userMessageText: {
-    color: 'white',
+  userMessageContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 16,
   },
-  aiMessageText: {
-    color: '#0C4A6E',
-  },
-  inputContainer: {
+  userMessageBubble: {
+    backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#E0F2FE',
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+    maxWidth: '85%',
+  },
+  userMessageText: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: 'Inter-Regular',
+    color: '#ffffff',
+  },
+  inputContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: 'transparent',
+  },
+  inputGradient: {
+    position: 'absolute',
+    top: -32,
+    left: 0,
+    right: 0,
+    height: 32,
   },
   inputWrapper: {
     flexDirection: 'row',
+    gap: 8,
     alignItems: 'flex-end',
-    backgroundColor: '#F0F9FF',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#E0F2FE',
   },
   textInput: {
     flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     fontSize: 16,
     fontFamily: 'Inter-Regular',
-    color: '#0C4A6E',
+    color: '#1e293b',
     maxHeight: 100,
-    paddingVertical: 8,
-    paddingRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendButtonActive: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#3b82f6',
   },
   sendButtonInactive: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#e2e8f0',
   },
 });
