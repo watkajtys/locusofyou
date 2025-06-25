@@ -21,10 +21,11 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, Compass, Target, Brain, Lightbulb } from 'lucide-react-native';
+import { ArrowRight, Compass, Target, Brain, Lightbulb, Star, Shield } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnboardingStepHeader from '@/components/OnboardingStepHeader';
 import OnboardingQuestion from '@/components/OnboardingQuestion';
+import OnboardingChoiceButtons from '@/components/OnboardingChoiceButtons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -174,6 +175,10 @@ export default function OnboardingScreen() {
     }, 300);
   };
 
+  const handleChoiceButtonPress = (choice: 'promotion' | 'prevention') => {
+    handleCardChoice(choice, 'regulatoryFocus');
+  };
+
   const handleSliderComplete = () => {
     setTimeout(() => {
       if (currentStep === 'slider1') {
@@ -246,21 +251,8 @@ export default function OnboardingScreen() {
                 questionText="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?"
                 icon={<Compass size={24} color="#94a3b8" strokeWidth={2} />}
               />
-              <View style={styles.cardsContainer}>
-                <TouchableOpacity
-                  style={styles.card}
-                  onPress={() => handleCardChoice('promotion', 'regulatoryFocus')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.cardText}>Striving to achieve a positive outcome</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.card}
-                  onPress={() => handleCardChoice('prevention', 'regulatoryFocus')}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.cardText}>Working hard to prevent a negative one</Text>
-                </TouchableOpacity>
+              <View style={styles.choiceButtonsContainer}>
+                <OnboardingChoiceButtons onChoice={handleChoiceButtonPress} />
               </View>
             </View>
             <View style={styles.actionSection}>
@@ -622,6 +614,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     fontFamily: 'Inter-Regular',
     color: '#1e293b',
+  },
+  choiceButtonsContainer: {
+    marginTop: 32,
+    width: '100%',
   },
   cardsContainer: {
     gap: 16,
