@@ -10,8 +10,9 @@ import Animated, {
   withRepeat,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain, Microscope, Heart, Shield } from 'lucide-react-native';
+import { Microscope, Heart, Shield } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
+import AuraProfileIcon from '@/components/AuraProfileIcon';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,7 +34,6 @@ export default function WelcomeScreen() {
   const pillarsOpacity = useSharedValue(0);
   const cardsOpacity = useSharedValue(0);
   const cardsTranslateY = useSharedValue(30);
-  const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
     // Start the animation sequence
@@ -41,16 +41,6 @@ export default function WelcomeScreen() {
       // Avatar animation (200ms delay)
       avatarOpacity.value = withTiming(1, { duration: 800 });
       avatarScale.value = withTiming(1, { duration: 800 });
-      
-      // Start glow animation
-      glowOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.8, { duration: 1500 }),
-          withTiming(0.3, { duration: 1500 })
-        ),
-        -1,
-        true
-      );
 
       // First bubble (after avatar)
       setTimeout(() => {
@@ -95,10 +85,6 @@ export default function WelcomeScreen() {
     transform: [{ scale: avatarScale.value }],
   }));
 
-  const glowAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-  }));
-
   const firstBubbleAnimatedStyle = useAnimatedStyle(() => ({
     opacity: firstBubbleOpacity.value,
     transform: [{ translateY: firstBubbleTranslateY.value }],
@@ -134,6 +120,13 @@ export default function WelcomeScreen() {
     }, 300);
   };
 
+  const getAuraState = (): 'idle' | 'listening' | 'processing' | 'responding' => {
+    if (isFirstBubbleLoading || isSecondBubbleLoading || isThirdBubbleLoading) {
+      return 'processing';
+    }
+    return 'listening';
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -155,15 +148,7 @@ export default function WelcomeScreen() {
           {/* AI Avatar Section */}
           <View style={styles.avatarSection}>
             <Animated.View style={[styles.avatarContainer, avatarAnimatedStyle]}>
-              <Animated.View style={[styles.avatarGlow, glowAnimatedStyle]} />
-              <LinearGradient
-                colors={['#8B5CF6', '#A855F7', '#C084FC']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatar}
-              >
-                <Brain size={32} color="white" strokeWidth={2} />
-              </LinearGradient>
+              <AuraProfileIcon state={getAuraState()} />
             </Animated.View>
           </View>
 
@@ -301,29 +286,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   avatarContainer: {
-    position: 'relative',
-  },
-  avatarGlow: {
-    position: 'absolute',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#0284C7',
-    top: -6,
-    left: -6,
-    opacity: 0.3,
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 8,
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    // AuraProfileIcon handles its own styling
   },
   chatSection: {
     alignItems: 'center',

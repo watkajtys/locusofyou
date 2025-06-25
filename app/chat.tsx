@@ -22,8 +22,9 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain, ArrowRight, ChevronLeft } from 'lucide-react-native';
+import { ArrowRight, ChevronLeft } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
+import AuraProfileIcon from '@/components/AuraProfileIcon';
 
 const { width, height } = Dimensions.get('window');
 
@@ -352,6 +353,17 @@ export default function ChatScreen() {
     }
   };
 
+  const getAuraState = (): 'idle' | 'listening' | 'processing' | 'responding' => {
+    // Check if any message is currently loading
+    const hasLoadingMessage = messages.some(msg => msg.isLoading);
+    
+    if (hasLoadingMessage) {
+      return 'processing';
+    }
+    
+    return 'listening';
+  };
+
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.backgroundContainer, backgroundAnimatedStyle]}>
@@ -379,14 +391,7 @@ export default function ChatScreen() {
             <View style={styles.headerContent}>
               <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
               <View style={styles.avatarContainer}>
-                <LinearGradient
-                  colors={['#a855f7', '#6366f1']}
-                  style={styles.avatar}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Brain size={20} color="#fff" strokeWidth={2} />
-                </LinearGradient>
+                <AuraProfileIcon state={getAuraState()} />
               </View>
             </View>
           </View>
@@ -496,13 +501,6 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   avatarContainer: {},
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   messagesContainer: {
     flex: 1,
     paddingTop: 96,

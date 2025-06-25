@@ -10,7 +10,6 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain } from 'lucide-react-native';
 
 interface AuraProfileIconProps {
   state: 'idle' | 'listening' | 'processing' | 'responding';
@@ -179,11 +178,6 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
         
         {/* Flash overlay for responding state */}
         <Animated.View style={[styles.flashOverlay, flashStyle]} />
-        
-        {/* Brain icon */}
-        <View style={styles.iconWrapper}>
-          <Brain size={20} color="#ffffff" strokeWidth={2} />
-        </View>
       </Animated.View>
     </View>
   );
@@ -235,10 +229,5 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#fcd34d', // amber-300
     opacity: 0,
-  },
-  iconWrapper: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
   },
 });
