@@ -321,12 +321,14 @@ export default function ChatScreen() {
             ))}
           </ScrollView>
 
-          {/* Input Area */}
+          {/* Input Area - Fixed to bottom with gradient fade */}
           <View style={styles.inputContainer}>
+            {/* Soft gradient fade from transparent to opaque white */}
             <LinearGradient
-              colors={['transparent', '#ffffff']}
+              colors={['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 1)']}
               style={styles.inputGradient}
             />
+            {/* Input field container with seamless design */}
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
@@ -337,6 +339,7 @@ export default function ChatScreen() {
                 multiline
                 maxLength={500}
               />
+              {/* Circular send button with vibrant blue background */}
               <TouchableOpacity
                 style={[
                   styles.sendButton,
@@ -346,9 +349,10 @@ export default function ChatScreen() {
                 disabled={!inputText.trim()}
               >
                 <Send 
-                  size={20} 
-                  color={inputText.trim() ? '#fff' : '#94a3b8'} 
-                  strokeWidth={2} 
+                  size={18} 
+                  color={inputText.trim() ? '#ffffff' : '#94a3b8'} 
+                  strokeWidth={2}
+                  style={{ transform: [{ rotate: '5deg' }] }} // Slight rotation for dynamic feel
                 />
               </TouchableOpacity>
             </View>
@@ -467,56 +471,67 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#ffffff',
   },
+  // Enhanced input area styles
   inputContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 16, // Horizontal padding as requested
+    paddingBottom: 16,     // Bottom padding as requested
     backgroundColor: 'transparent',
   },
   inputGradient: {
     position: 'absolute',
-    top: -32,
+    top: -40,
     left: 0,
     right: 0,
-    height: 32,
+    height: 40, // Increased height for better fade effect
   },
   inputWrapper: {
     flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-end',
+    alignItems: 'center', // Changed from 'flex-end' to 'center' as requested
+    backgroundColor: '#ffffff', // White background
+    borderRadius: 24, // Fully rounded corners (rounded-full equivalent)
+    borderWidth: 1,
+    borderColor: '#e2e8f0', // Subtle border (border-slate-200)
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    // Enhanced shadow for tangible, elevated feel
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
   },
   textInput: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    flex: 1, // Flexible as requested
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#1e293b',
+    paddingHorizontal: 16, // Horizontal padding
+    paddingVertical: 12,   // Vertical padding
     maxHeight: 100,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 2,
+    // No background color as requested (inherits from wrapper)
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 40,  // Circle dimensions
+    height: 40, // Circle dimensions
+    borderRadius: 20, // Perfect circle
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 4,
+    // Enhanced shadow for gentle elevation
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   },
   sendButtonActive: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#3b82f6', // Vibrant blue (blue-500) for clear call to action
   },
   sendButtonInactive: {
-    backgroundColor: '#e2e8f0',
+    backgroundColor: '#e2e8f0', // Subtle inactive state
   },
 });
