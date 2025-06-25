@@ -28,16 +28,18 @@ const { width, height } = Dimensions.get('window');
 
 interface Message {
   id: string;
-  text: string;
+  text: string; // Will be empty or "..." during loading for AI messages
   isUser: boolean;
   timestamp: Date;
+  isLoading?: boolean;
+  actualText?: string; // Stores the real text during AI message loading
 }
 
 export default function ChatScreen() {
   const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  // const [isTyping, setIsTyping] = useState(false); // No longer needed
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Animation values
@@ -68,14 +70,35 @@ export default function ChatScreen() {
 
       // Add welcome message after animation
       setTimeout(() => {
-        addMessage(welcomeMessage, false);
-        
-        // Add follow-up message
-        setTimeout(() => {
-          const followUpMessage = getFollowUpMessage(coachingStyle);
-          addMessage(followUpMessage, false);
-        }, 1500);
-      }, 1000);
+        const welcomeMsgId = "initial-welcome";
+        const actualWelcomeText = getWelcomeMessage(coachingStyle); // Get the final text
+        addMessage({
+          text: "", // Displayed while loading
+          isUser: false,
+          isLoading: true,
+          actualText: actualWelcomeText // Store final text
+        }, welcomeMsgId);
+
+        setTimeout(() => { // Simulate loading delay
+          updateMessage(welcomeMsgId, { text: actualWelcomeText, isLoading: false, actualText: undefined });
+
+          // Add follow-up message
+          setTimeout(() => {
+            const followUpMsgId = "initial-followup";
+            const actualFollowUpText = getFollowUpMessage(coachingStyle); // Get the final text
+            addMessage({
+              text: "", // Displayed while loading
+              isUser: false,
+              isLoading: true,
+              actualText: actualFollowUpText // Store final text
+            }, followUpMsgId);
+
+            setTimeout(() => { // Simulate loading delay
+              updateMessage(followUpMsgId, { text: actualFollowUpText, isLoading: false, actualText: undefined });
+            }, 1200); // Loading time for follow-up
+          }, 800); // Delay between welcome and follow-up message appearance
+        }, 1000); // Loading time for welcome message
+      }, 1000); // Delay after header/avatar animation
     }, 300);
   }, [coachingStyle]);
 
@@ -95,12 +118,11 @@ export default function ChatScreen() {
     }
   };
 
-  const addMessage = (text: string, isUser: boolean) => {
+  const addMessage = (messageData: Omit<Message, 'timestamp' | 'id'>, id?: string) => {
     const newMessage: Message = {
-      id: Date.now().toString(),
-      text,
-      isUser,
+      id: id || Date.now().toString(),
       timestamp: new Date(),
+      ...messageData,
     };
     
     setMessages(prev => [...prev, newMessage]);
@@ -109,22 +131,46 @@ export default function ChatScreen() {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
+    return newMessage.id; // Return the ID
+  };
+
+  const updateMessage = (id: string, updates: Partial<Message>) => {
+    setMessages(prev =>
+      prev.map(msg => (msg.id === id ? { ...msg, ...updates } : msg))
+    );
+    // Scroll to bottom after message is updated (e.g., text revealed)
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   const handleSendMessage = () => {
     if (inputText.trim()) {
-      addMessage(inputText.trim(), true);
+      addMessage({ text: inputText.trim(), isUser: true });
+      const currentInput = inputText; // Capture before clearing
       setInputText('');
       
-      // Show typing indicator
-      setIsTyping(true);
+      // No longer use global isTyping for individual message loading
+      // setIsTyping(true);
       
-      // Simulate AI response with realistic delay
+      const aiMessageId = Date.now().toString() + "-ai";
+      const responseText = generateAIResponse(currentInput, coachingStyle); // Generate text first
+
+      addMessage({
+        text: "", // Displayed while loading
+        isUser: false,
+        isLoading: true,
+        actualText: responseText // Store final text
+      }, aiMessageId);
+
+      // Simulate AI response delay (e.g. network, computation)
       setTimeout(() => {
-        setIsTyping(false);
-        const response = generateAIResponse(inputText, coachingStyle);
-        addMessage(response, false);
-      }, 1500 + Math.random() * 1500); // Random delay between 1.5-3s
+        updateMessage(aiMessageId, {
+          text: responseText,
+          isLoading: false,
+          actualText: undefined // Clear placeholder
+        });
+      }, 1500 + Math.random() * 1500);
     }
   };
 
@@ -222,20 +268,24 @@ export default function ChatScreen() {
                   message.isUser ? styles.userMessage : styles.aiMessage
                 ]}
               >
-                <Text
-                  style={[
-                    styles.messageText,
-                    message.isUser ? styles.userMessageText : styles.aiMessageText
-                  ]}
-                >
-                  {message.text}
-                </Text>
+                {message.isLoading && !message.isUser ? (
+                  <TypingIndicator isVisible={true} showBubble={false} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.messageText,
+                      message.isUser ? styles.userMessageText : styles.aiMessageText
+                    ]}
+                  >
+                    {message.text}
+                  </Text>
+                )}
               </View>
             </View>
           ))}
           
-          {/* Typing Indicator */}
-          <TypingIndicator isVisible={isTyping} />
+          {/* Global Typing Indicator removed, handled by individual messages */}
+          {/* <TypingIndicator isVisible={isTyping} /> */}
         </ScrollView>
 
         {/* Input */}

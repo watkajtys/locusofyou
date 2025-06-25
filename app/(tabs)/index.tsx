@@ -11,11 +11,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Brain, Microscope, Heart, Shield } from 'lucide-react-native';
+import TypingIndicator from '@/components/TypingIndicator'; // Import TypingIndicator
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [isFirstBubbleLoading, setIsFirstBubbleLoading] = useState(true);
+  const [isSecondBubbleLoading, setIsSecondBubbleLoading] = useState(true);
+  const [isThirdBubbleLoading, setIsThirdBubbleLoading] = useState(true);
 
   // Animation values
   const avatarOpacity = useSharedValue(0);
@@ -34,8 +38,8 @@ export default function WelcomeScreen() {
   useEffect(() => {
     // Start the animation sequence
     setTimeout(() => {
-      // Avatar animation (500ms delay)
-      avatarOpacity.value = withTiming(1, { duration: 800 });
+      // Avatar animation (200ms delay)
+      avatarOpacity.value = withTiming(1, { duration: 800 }); // Avatar animation itself can remain 800ms
       avatarScale.value = withTiming(1, { duration: 800 });
       
       // Start glow animation
@@ -50,30 +54,45 @@ export default function WelcomeScreen() {
 
       // First bubble (after avatar)
       setTimeout(() => {
-        firstBubbleOpacity.value = withTiming(1, { duration: 600 });
-        firstBubbleTranslateY.value = withTiming(0, { duration: 600 });
-
-        // Second bubble (1.5s after first)
+        // Show first bubble container, loading indicator will be inside
+        firstBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
+        firstBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
+        // Simulate loading time for first bubble
         setTimeout(() => {
-          secondBubbleOpacity.value = withTiming(1, { duration: 600 });
-          secondBubbleTranslateY.value = withTiming(0, { duration: 600 });
+          setIsFirstBubbleLoading(false);
+        }, 600); // Faster loading
 
-          // Trust pillars (same time as second bubble)
-          pillarsOpacity.value = withTiming(1, { duration: 800 });
-
-          // Third bubble and cards (after second bubble)
+        // Second bubble (800ms after first bubble text appears)
+        setTimeout(() => {
+          // Show second bubble container
+          secondBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
+          secondBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
+          // Simulate loading time for second bubble
           setTimeout(() => {
-            thirdBubbleOpacity.value = withTiming(1, { duration: 600 });
-            thirdBubbleTranslateY.value = withTiming(0, { duration: 600 });
+            setIsSecondBubbleLoading(false);
+          }, 700); // Faster loading
+
+          // Trust pillars (same time as second bubble container appears)
+          pillarsOpacity.value = withTiming(1, { duration: 800 }); // Pillars can keep their pace
+
+          // Third bubble and cards (800ms after second bubble text appears)
+          setTimeout(() => {
+            // Show third bubble container
+            thirdBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
+            thirdBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
+            // Simulate loading time for third bubble
+            setTimeout(() => {
+              setIsThirdBubbleLoading(false);
+            }, 600); // Faster loading
 
             setTimeout(() => {
-              cardsOpacity.value = withTiming(1, { duration: 600 });
+              cardsOpacity.value = withTiming(1, { duration: 600 }); // Cards animation can remain 600ms
               cardsTranslateY.value = withTiming(0, { duration: 600 });
-            }, 300);
-          }, 1000);
-        }, 1500);
-      }, 800);
-    }, 500);
+            }, 300); // This delay is for cards after third bubble text appears
+          }, 800 + 700); // Delay from previous bubble text + current loading
+        }, 800 + 600); // Delay from previous bubble text + current loading
+      }, 400); // Faster appearance after avatar
+    }, 200); // Faster initial delay
   }, []);
 
   // Animated styles
@@ -158,23 +177,35 @@ export default function WelcomeScreen() {
           <View style={styles.chatSection}>
             <View style={styles.chatContainer}>
               <Animated.View style={[styles.chatBubbleContainer, firstBubbleAnimatedStyle]}>
-                <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
+                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
-                  <Text style={styles.chatText}>Welcome.</Text>
+                  {isFirstBubbleLoading ? (
+                    <TypingIndicator isVisible={true} showBubble={false} />
+                  ) : (
+                    <Text style={styles.chatText}>Welcome.</Text>
+                  )}
                 </View>
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, secondBubbleAnimatedStyle]}>
-                <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
+                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
-                  <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace.</Text>
+                  {isSecondBubbleLoading ? (
+                    <TypingIndicator isVisible={true} showBubble={false} />
+                  ) : (
+                    <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace.</Text>
+                  )}
                 </View>
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, thirdBubbleAnimatedStyle]}>
-                <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
+                {/* <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} /> Removed */}
                 <View style={styles.chatBubble}>
-                  <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
+                  {isThirdBubbleLoading ? (
+                    <TypingIndicator isVisible={true} showBubble={false} />
+                  ) : (
+                    <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
+                  )}
                 </View>
               </Animated.View>
             </View>
@@ -312,34 +343,29 @@ const styles = StyleSheet.create({
   chatContainer: {
     width: '100%',
     marginBottom: 32,
+    alignItems: 'flex-start', // Added to align bubbles to the left
   },
   chatBubbleContainer: {
-    position: 'relative',
-    marginBottom: 8,
+    // Removed position: 'relative' as bubbleGlow is removed
+    marginBottom: 16, // Matched to chat.tsx messageContainer
+    maxWidth: '80%', // Added from chat.tsx messageBubble
+    alignItems: 'flex-start', // Ensures bubble itself is aligned left in its container if container is wider
   },
-  bubbleGlow: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#0284C7',
-    top: 0,
-    left: 0,
-  },
+  // bubbleGlow: removed
   chatBubble: {
     backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16, // Matched to chat.tsx messageBubble
+    paddingVertical: 12,   // Matched to chat.tsx messageBubble
     borderRadius: 20,
+    borderBottomLeftRadius: 6, // Added from chat.tsx aiMessage for the "tail"
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 }, // Matched to chat.tsx aiMessage
+    shadowOpacity: 0.1,                   // Matched to chat.tsx aiMessage
+    shadowRadius: 3,                      // Matched to chat.tsx aiMessage
+    elevation: 2,                         // Matched to chat.tsx aiMessage
   },
   chatText: {
-    fontSize: 16,
+    fontSize: 16, // Matched to chat.tsx messageText
     fontFamily: 'Inter-Regular',
     color: '#0C4A6E',
     lineHeight: 24,
