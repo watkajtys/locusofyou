@@ -248,7 +248,7 @@ export default function ChatScreen() {
               </Text>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* Messages */}
         <ScrollView 
@@ -318,7 +318,7 @@ export default function ChatScreen() {
               />
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
