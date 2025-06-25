@@ -60,7 +60,7 @@ const SliderComponent = ({
   onValueChange: (value: number) => void;
   disabled?: boolean;
 }) => {
-  const sliderWidth = width - 64;
+  const sliderWidth = width - 96; // Account for container padding
   const thumbPosition = useRef(new RNAnimated.Value((value / 100) * sliderWidth)).current;
 
   const panResponder = PanResponder.create({
@@ -69,7 +69,7 @@ const SliderComponent = ({
     onPanResponderMove: (_, gestureState) => {
       if (disabled) return;
       
-      const newPosition = Math.max(0, Math.min(sliderWidth, gestureState.moveX - 32));
+      const newPosition = Math.max(0, Math.min(sliderWidth, gestureState.moveX - 48));
       thumbPosition.setValue(newPosition);
       
       const newValue = Math.round((newPosition / sliderWidth) * 100);
@@ -199,32 +199,49 @@ export default function OnboardingScreen() {
       case 'welcome':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Got it. That's helpful." />
-            <AIMessage 
-              text="A few more quick questions to get a clearer picture of your style. Just choose the one that feels closer to your truth." 
-              delay={1000}
-              onComplete={() => setTimeout(() => animateToNextStep('question1'), 1000)}
-            />
+            <View style={styles.messagesSection}>
+              <AIMessage text="Got it. That's helpful." />
+              <AIMessage 
+                text="A few more quick questions to get a clearer picture of your style. Just choose the one that feels closer to your truth." 
+                delay={1000}
+                onComplete={() => setTimeout(() => animateToNextStep('question1'), 1000)}
+              />
+            </View>
+            <View style={styles.interactionSection}>
+              {/* Reserved space for future interactions */}
+            </View>
+            <View style={styles.actionSection}>
+              {/* Reserved space for action buttons */}
+            </View>
           </View>
         );
 
       case 'question1':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?" />
-            <View style={styles.cardsContainer}>
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleCardChoice('promotion', 'regulatoryFocus')}
-              >
-                <Text style={styles.cardText}>Striving to achieve a positive outcome</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleCardChoice('prevention', 'regulatoryFocus')}
-              >
-                <Text style={styles.cardText}>Working hard to prevent a negative one</Text>
-              </TouchableOpacity>
+            <View style={styles.messagesSection}>
+              <AIMessage text="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?" />
+            </View>
+            <View style={styles.interactionSection}>
+              <View style={styles.cardsContainer}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('promotion', 'regulatoryFocus')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cardText}>Striving to achieve a positive outcome</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('prevention', 'regulatoryFocus')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cardText}>Working hard to prevent a negative one</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.actionSection}>
+              {/* Reserved space for action buttons */}
             </View>
           </View>
         );
@@ -232,24 +249,33 @@ export default function OnboardingScreen() {
       case 'question2':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Okay, next..." />
-            <AIMessage 
-              text="When you achieve a major success, do you tend to credit it more to your disciplined preparation and hard work, or to being in the right place at the right time?"
-              delay={800}
-            />
-            <View style={styles.cardsContainer}>
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleCardChoice('internal', 'locusOfControl')}
-              >
-                <Text style={styles.cardText}>Disciplined preparation and hard work</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleCardChoice('external', 'locusOfControl')}
-              >
-                <Text style={styles.cardText}>Being in the right place at the right time</Text>
-              </TouchableOpacity>
+            <View style={styles.messagesSection}>
+              <AIMessage text="Okay, next..." />
+              <AIMessage 
+                text="When you achieve a major success, do you tend to credit it more to your disciplined preparation and hard work, or to being in the right place at the right time?"
+                delay={800}
+              />
+            </View>
+            <View style={styles.interactionSection}>
+              <View style={styles.cardsContainer}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('internal', 'locusOfControl')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cardText}>Disciplined preparation and hard work</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('external', 'locusOfControl')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cardText}>Being in the right place at the right time</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.actionSection}>
+              {/* Reserved space for action buttons */}
             </View>
           </View>
         );
@@ -257,24 +283,33 @@ export default function OnboardingScreen() {
       case 'question3':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Last one like this..." />
-            <AIMessage 
-              text="Do you feel that a person's ability to stay focused and organized is something they're mostly born with, or is it a skill that can be developed over time with the right strategies?"
-              delay={800}
-            />
-            <View style={styles.cardsContainer}>
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleCardChoice('fixed', 'mindset')}
-              >
-                <Text style={styles.cardText}>Mostly born with it</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => handleCardChoice('growth', 'mindset')}
-              >
-                <Text style={styles.cardText}>A skill that can be developed</Text>
-              </TouchableOpacity>
+            <View style={styles.messagesSection}>
+              <AIMessage text="Last one like this..." />
+              <AIMessage 
+                text="Do you feel that a person's ability to stay focused and organized is something they're mostly born with, or is it a skill that can be developed over time with the right strategies?"
+                delay={800}
+              />
+            </View>
+            <View style={styles.interactionSection}>
+              <View style={styles.cardsContainer}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('fixed', 'mindset')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cardText}>Mostly born with it</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('growth', 'mindset')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cardText}>A skill that can be developed</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.actionSection}>
+              {/* Reserved space for action buttons */}
             </View>
           </View>
         );
@@ -282,74 +317,102 @@ export default function OnboardingScreen() {
       case 'question4':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Thanks for that. Now for a couple of questions on a different note. For these, just slide to the point on the scale that feels most like you." />
-            <AIMessage 
-              text="When it comes to tackling a big project, where do you draw your energy from?"
-              delay={1500}
-              onComplete={() => setTimeout(() => animateToNextStep('slider1'), 1000)}
-            />
+            <View style={styles.messagesSection}>
+              <AIMessage text="Thanks for that. Now for a couple of questions on a different note. For these, just slide to the point on the scale that feels most like you." />
+              <AIMessage 
+                text="When it comes to tackling a big project, where do you draw your energy from?"
+                delay={1500}
+                onComplete={() => setTimeout(() => animateToNextStep('slider1'), 1000)}
+              />
+            </View>
+            <View style={styles.interactionSection}>
+              {/* Reserved space for future slider */}
+            </View>
+            <View style={styles.actionSection}>
+              {/* Reserved space for action buttons */}
+            </View>
           </View>
         );
 
       case 'slider1':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="When it comes to tackling a big project, where do you draw your energy from?" />
-            <SliderComponent
-              leftLabel="Working quietly on my own"
-              rightLabel="Bouncing ideas off of a group"
-              value={onboardingData.extraversion}
-              onValueChange={(value) => setOnboardingData(prev => ({ ...prev, extraversion: value }))}
-            />
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleSliderComplete}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
+            <View style={styles.messagesSection}>
+              <AIMessage text="When it comes to tackling a big project, where do you draw your energy from?" />
+            </View>
+            <View style={styles.interactionSection}>
+              <SliderComponent
+                leftLabel="Working quietly on my own"
+                rightLabel="Bouncing ideas off of a group"
+                value={onboardingData.extraversion}
+                onValueChange={(value) => setOnboardingData(prev => ({ ...prev, extraversion: value }))}
+              />
+            </View>
+            <View style={styles.actionSection}>
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={handleSliderComplete}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.continueButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
       case 'slider2':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Got it. One more like that..." />
-            <AIMessage 
-              text="When someone gives you critical feedback on your work, what's your initial instinct?"
-              delay={800}
-            />
-            <SliderComponent
-              leftLabel="Challenge the feedback and defend my position"
-              rightLabel="Find common ground and seek to understand their view"
-              value={onboardingData.agreeableness}
-              onValueChange={(value) => setOnboardingData(prev => ({ ...prev, agreeableness: value }))}
-            />
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleSliderComplete}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
+            <View style={styles.messagesSection}>
+              <AIMessage text="Got it. One more like that..." />
+              <AIMessage 
+                text="When someone gives you critical feedback on your work, what's your initial instinct?"
+                delay={800}
+              />
+            </View>
+            <View style={styles.interactionSection}>
+              <SliderComponent
+                leftLabel="Challenge the feedback and defend my position"
+                rightLabel="Find common ground and seek to understand their view"
+                value={onboardingData.agreeableness}
+                onValueChange={(value) => setOnboardingData(prev => ({ ...prev, agreeableness: value }))}
+              />
+            </View>
+            <View style={styles.actionSection}>
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={handleSliderComplete}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.continueButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
       case 'final-question':
         return (
           <View style={styles.stepContainer}>
-            <AIMessage text="Perfect. That gives me a complete picture of your unique style." />
-            <AIMessage text="Now, let's bring the focus to you." delay={1000} />
-            <AIMessage text="What's on your mind right now that feels most important?" delay={2000} />
-            <View style={styles.textInputContainer}>
-              <TextInput
-                style={styles.textInput}
-                value={onboardingData.currentFocus}
-                onChangeText={(text) => setOnboardingData(prev => ({ ...prev, currentFocus: text }))}
-                placeholder="Share what's most important to you right now..."
-                placeholderTextColor="#94a3b8"
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-              />
+            <View style={styles.messagesSection}>
+              <AIMessage text="Perfect. That gives me a complete picture of your unique style." />
+              <AIMessage text="Now, let's bring the focus to you." delay={1000} />
+              <AIMessage text="What's on your mind right now that feels most important?" delay={2000} />
+            </View>
+            <View style={styles.interactionSection}>
+              <View style={styles.textInputContainer}>
+                <TextInput
+                  style={styles.textInput}
+                  value={onboardingData.currentFocus}
+                  onChangeText={(text) => setOnboardingData(prev => ({ ...prev, currentFocus: text }))}
+                  placeholder="Share what's most important to you right now..."
+                  placeholderTextColor="#94a3b8"
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                />
+              </View>
+            </View>
+            <View style={styles.actionSection}>
               <TouchableOpacity
                 style={[
                   styles.submitButton,
@@ -357,6 +420,7 @@ export default function OnboardingScreen() {
                 ]}
                 onPress={handleFinalSubmit}
                 disabled={!onboardingData.currentFocus.trim()}
+                activeOpacity={0.8}
               >
                 <Text style={[
                   styles.submitButtonText,
@@ -397,7 +461,7 @@ export default function OnboardingScreen() {
       </Animated.View>
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
+        {/* Fixed Header */}
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
@@ -421,18 +485,14 @@ export default function OnboardingScreen() {
           </View>
         </View>
 
-        {/* Content */}
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        {/* Fixed Content Area */}
+        <View style={styles.contentArea}>
           {showContent && (
             <Animated.View style={[styles.content, contentAnimatedStyle]}>
               {getStepContent()}
             </Animated.View>
           )}
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -510,6 +570,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
+    height: 72, // Fixed header height
   },
   backButton: {
     padding: 8,
@@ -532,26 +593,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scrollView: {
+  contentArea: {
     flex: 1,
-  },
-  scrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 20,
-    minHeight: height - 200,
   },
   content: {
     flex: 1,
   },
   stepContainer: {
     flex: 1,
+    minHeight: height - 150, // Ensure consistent minimum height
+  },
+  messagesSection: {
+    minHeight: 200, // Reserved space for messages
+    paddingTop: 20,
+    paddingBottom: 20,
+  },
+  interactionSection: {
+    flex: 1,
+    minHeight: 200, // Reserved space for interactions
     justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: height - 300,
+    paddingVertical: 20,
+  },
+  actionSection: {
+    minHeight: 80, // Reserved space for action buttons
+    justifyContent: 'flex-end',
+    paddingBottom: 20,
   },
   aiMessageContainer: {
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 16,
     width: '100%',
   },
   aiMessageBubble: {
@@ -576,7 +647,6 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     gap: 16,
-    marginTop: 32,
     width: '100%',
   },
   card: {
@@ -591,6 +661,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: 80, // Consistent card height
   },
   cardText: {
     fontSize: 16,
@@ -600,7 +671,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   sliderContainer: {
-    marginTop: 32,
     width: '100%',
     paddingHorizontal: 16,
   },
@@ -611,6 +681,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 8,
     lineHeight: 18,
+    minHeight: 36, // Consistent label height
   },
   sliderTrack: {
     height: 60,
@@ -640,12 +711,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 24,
-    marginTop: 32,
+    alignSelf: 'center',
     shadowColor: '#3b82f6',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
+    minWidth: 120, // Consistent button width
   },
   continueButtonText: {
     fontSize: 16,
@@ -654,7 +726,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   textInputContainer: {
-    marginTop: 32,
     width: '100%',
   },
   textInput: {
@@ -666,7 +737,7 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     borderWidth: 2,
     borderColor: '#e2e8f0',
-    minHeight: 120,
+    height: 140, // Fixed height for consistency
     textAlignVertical: 'top',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -681,13 +752,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 24,
-    marginTop: 20,
     gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
+    alignSelf: 'center',
+    minWidth: 180, // Consistent button width
   },
   submitButtonActive: {
     backgroundColor: '#3b82f6',
