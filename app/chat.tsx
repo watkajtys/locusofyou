@@ -109,50 +109,49 @@ export default function ChatScreen() {
       false
     );
 
-    // Initialize chat with welcome messages using typing indicators
+    // Show typing indicator immediately, no delay
+    const welcomeMessageId = "welcome-msg";
+    const welcomeText = getWelcomeMessage(coachingStyle);
+    
+    // Add loading message immediately
+    addMessage({
+      text: "",
+      isUser: false,
+      isLoading: true,
+      actualText: welcomeText
+    }, welcomeMessageId);
+
+    // Show actual text after loading delay
     setTimeout(() => {
-      const welcomeMessageId = "welcome-msg";
-      const welcomeText = getWelcomeMessage(coachingStyle);
-      
-      // Add loading message first
-      addMessage({
-        text: "",
-        isUser: false,
-        isLoading: true,
-        actualText: welcomeText
-      }, welcomeMessageId);
+      updateMessage(welcomeMessageId, {
+        text: welcomeText,
+        isLoading: false,
+        actualText: undefined
+      });
 
-      // Show actual text after loading delay
+      // Add follow-up message with typing indicator immediately after first message appears
       setTimeout(() => {
-        updateMessage(welcomeMessageId, {
-          text: welcomeText,
-          isLoading: false,
-          actualText: undefined
-        });
+        const followUpMessageId = "followup-msg";
+        const followUpText = getFollowUpMessage(coachingStyle);
+        
+        // Add loading message immediately
+        addMessage({
+          text: "",
+          isUser: false,
+          isLoading: true,
+          actualText: followUpText
+        }, followUpMessageId);
 
-        // Add follow-up message with typing indicator
+        // Show follow-up text after loading delay
         setTimeout(() => {
-          const followUpMessageId = "followup-msg";
-          const followUpText = getFollowUpMessage(coachingStyle);
-          
-          addMessage({
-            text: "",
-            isUser: false,
-            isLoading: true,
-            actualText: followUpText
-          }, followUpMessageId);
-
-          // Show follow-up text after loading delay
-          setTimeout(() => {
-            updateMessage(followUpMessageId, {
-              text: followUpText,
-              isLoading: false,
-              actualText: undefined
-            });
-          }, 1200);
-        }, 800);
-      }, 1000);
-    }, 1500);
+          updateMessage(followUpMessageId, {
+            text: followUpText,
+            isLoading: false,
+            actualText: undefined
+          });
+        }, 1200);
+      }, 800);
+    }, 1000);
   }, [coachingStyle]);
 
   const getWelcomeMessage = (style: string) => {
@@ -201,10 +200,11 @@ export default function ChatScreen() {
       const currentInput = inputText;
       setInputText('');
       
-      // Add AI response with typing indicator
+      // Add AI response with typing indicator immediately
       const aiMessageId = Date.now().toString() + "-ai";
       const responseText = generateAIResponse(currentInput, coachingStyle);
       
+      // Show typing indicator immediately, no delay
       addMessage({
         text: "",
         isUser: false,
@@ -315,7 +315,7 @@ export default function ChatScreen() {
                   key={message.id} 
                   message={message.text} 
                   isLoading={message.isLoading}
-                  delay={0} // Remove staggered delay since messages appear individually
+                  delay={0} // No delay for individual message animations
                 />
               )
             ))}
