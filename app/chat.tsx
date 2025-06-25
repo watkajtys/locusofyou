@@ -78,12 +78,19 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const initializedRef = useRef(false);
 
   // Animation values
   const backgroundScale = useSharedValue(1);
   const backgroundRotation = useSharedValue(0);
 
   useEffect(() => {
+    // Prevent duplicate initialization
+    if (initializedRef.current) {
+      return;
+    }
+    initializedRef.current = true;
+
     // Start breathing animation for background
     backgroundScale.value = withRepeat(
       withSequence(
