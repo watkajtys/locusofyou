@@ -185,7 +185,7 @@ export default function WelcomeScreen() {
                   {isSecondBubbleLoading ? (
                     <TypingIndicator isVisible={true} showBubble={false} />
                   ) : (
-                    <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace.</Text>
+                    <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace. No pressure.</Text>
                   )}
                 </View>
               </Animated.View>
@@ -195,7 +195,7 @@ export default function WelcomeScreen() {
                   {isThirdBubbleLoading ? (
                     <TypingIndicator isVisible={true} showBubble={false} />
                   ) : (
-                    <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
+                    <Text style={styles.chatText}>To start, I have one quick question to understand your style.</Text>
                   )}
                 </View>
               </Animated.View>
