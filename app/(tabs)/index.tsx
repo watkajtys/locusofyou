@@ -38,8 +38,8 @@ export default function WelcomeScreen() {
   useEffect(() => {
     // Start the animation sequence
     setTimeout(() => {
-      // Avatar animation (500ms delay)
-      avatarOpacity.value = withTiming(1, { duration: 800 });
+      // Avatar animation (200ms delay)
+      avatarOpacity.value = withTiming(1, { duration: 800 }); // Avatar animation itself can remain 800ms
       avatarScale.value = withTiming(1, { duration: 800 });
       
       // Start glow animation
@@ -55,44 +55,44 @@ export default function WelcomeScreen() {
       // First bubble (after avatar)
       setTimeout(() => {
         // Show first bubble container, loading indicator will be inside
-        firstBubbleOpacity.value = withTiming(1, { duration: 600 });
-        firstBubbleTranslateY.value = withTiming(0, { duration: 600 });
+        firstBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
+        firstBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
         // Simulate loading time for first bubble
         setTimeout(() => {
           setIsFirstBubbleLoading(false);
-        }, 1000); // Adjust this delay as needed
+        }, 600); // Faster loading
 
-        // Second bubble (1.5s after first bubble text appears)
+        // Second bubble (800ms after first bubble text appears)
         setTimeout(() => {
           // Show second bubble container
-          secondBubbleOpacity.value = withTiming(1, { duration: 600 });
-          secondBubbleTranslateY.value = withTiming(0, { duration: 600 });
+          secondBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
+          secondBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
           // Simulate loading time for second bubble
           setTimeout(() => {
             setIsSecondBubbleLoading(false);
-          }, 1200); // Adjust this delay as needed
+          }, 700); // Faster loading
 
           // Trust pillars (same time as second bubble container appears)
-          pillarsOpacity.value = withTiming(1, { duration: 800 });
+          pillarsOpacity.value = withTiming(1, { duration: 800 }); // Pillars can keep their pace
 
-          // Third bubble and cards (1s after second bubble text appears)
+          // Third bubble and cards (800ms after second bubble text appears)
           setTimeout(() => {
             // Show third bubble container
-            thirdBubbleOpacity.value = withTiming(1, { duration: 600 });
-            thirdBubbleTranslateY.value = withTiming(0, { duration: 600 });
+            thirdBubbleOpacity.value = withTiming(1, { duration: 400 }); // Faster animation
+            thirdBubbleTranslateY.value = withTiming(0, { duration: 400 }); // Faster animation
             // Simulate loading time for third bubble
             setTimeout(() => {
               setIsThirdBubbleLoading(false);
-            }, 1000); // Adjust this delay as needed
+            }, 600); // Faster loading
 
             setTimeout(() => {
-              cardsOpacity.value = withTiming(1, { duration: 600 });
+              cardsOpacity.value = withTiming(1, { duration: 600 }); // Cards animation can remain 600ms
               cardsTranslateY.value = withTiming(0, { duration: 600 });
             }, 300); // This delay is for cards after third bubble text appears
-          }, 1000 + 1200); // Delay from previous + current loading
-        }, 1500 + 1000); // Delay from previous + current loading
-      }, 800);
-    }, 500);
+          }, 800 + 700); // Delay from previous bubble text + current loading
+        }, 800 + 600); // Delay from previous bubble text + current loading
+      }, 400); // Faster appearance after avatar
+    }, 200); // Faster initial delay
   }, []);
 
   // Animated styles
