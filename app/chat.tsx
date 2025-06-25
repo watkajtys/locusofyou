@@ -22,7 +22,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain, ArrowLeft, ChevronLeft } from 'lucide-react-native';
+import { Brain, ArrowRight, ChevronLeft } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
 
 const { width, height } = Dimensions.get('window');
@@ -341,7 +341,7 @@ export default function ChatScreen() {
                 multiline
                 maxLength={500}
               />
-              {/* Square send button with rounded corners and left arrow */}
+              {/* Square send button with rounded corners and right arrow */}
               <TouchableOpacity
                 style={[
                   styles.sendButton,
@@ -350,7 +350,7 @@ export default function ChatScreen() {
                 onPress={handleSendMessage}
                 disabled={!inputText.trim()}
               >
-                <ArrowLeft 
+                <ArrowRight 
                   size={18} 
                   color={inputText.trim() ? '#ffffff' : '#94a3b8'} 
                   strokeWidth={2}
