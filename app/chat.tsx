@@ -22,7 +22,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain, Send, ChevronLeft } from 'lucide-react-native';
+import { Brain, ArrowLeft, ChevronLeft } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
 
 const { width, height } = Dimensions.get('window');
@@ -334,7 +334,7 @@ export default function ChatScreen() {
                 multiline
                 maxLength={500}
               />
-              {/* Circular send button with vibrant blue background */}
+              {/* Square send button with rounded corners and left arrow */}
               <TouchableOpacity
                 style={[
                   styles.sendButton,
@@ -343,11 +343,10 @@ export default function ChatScreen() {
                 onPress={handleSendMessage}
                 disabled={!inputText.trim()}
               >
-                <Send 
+                <ArrowLeft 
                   size={18} 
                   color={inputText.trim() ? '#ffffff' : '#94a3b8'} 
                   strokeWidth={2}
-                  style={{ transform: [{ rotate: '5deg' }] }} // Slight rotation for dynamic feel
                 />
               </TouchableOpacity>
             </View>
@@ -505,7 +504,7 @@ const styles = StyleSheet.create({
   sendButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12, // Square with rounded corners instead of fully circular
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
