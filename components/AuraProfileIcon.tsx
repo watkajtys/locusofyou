@@ -21,7 +21,7 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
   const innerPulse = useSharedValue(1);
   const glowOpacity = useSharedValue(0);
   const swirl = useSharedValue(0);
-  const flash = useSharedValue(0);
+  const brighten = useSharedValue(0);
   const ringOpacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -30,14 +30,15 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
     cancelAnimation(innerPulse);
     cancelAnimation(glowOpacity);
     cancelAnimation(swirl);
-    cancelAnimation(flash);
+    cancelAnimation(brighten);
     cancelAnimation(ringOpacity);
 
     switch (state) {
       case 'idle':
         // Gentle pulsing animation - multiple rings
-        glowOpacity.value = withTiming(0.2, { duration: 400 });
-        ringOpacity.value = withTiming(0.4, { duration: 400 });
+        glowOpacity.value = withTiming(0.2, { duration: 600, easing: Easing.out(Easing.quad) });
+        ringOpacity.value = withTiming(0.4, { duration: 600, easing: Easing.out(Easing.quad) });
+        brighten.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.quad) });
         
         pulseScale.value = withRepeat(
           withSequence(
@@ -72,21 +73,23 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
 
       case 'listening':
         // Focused energy with steady glow
-        pulseScale.value = withTiming(1.1, { duration: 400 });
-        innerPulse.value = withTiming(1.2, { duration: 400 });
-        glowOpacity.value = withTiming(0.7, { duration: 400 });
-        ringOpacity.value = withTiming(0.8, { duration: 400 });
+        pulseScale.value = withTiming(1.1, { duration: 500, easing: Easing.out(Easing.quad) });
+        innerPulse.value = withTiming(1.2, { duration: 500, easing: Easing.out(Easing.quad) });
+        glowOpacity.value = withTiming(0.7, { duration: 500, easing: Easing.out(Easing.quad) });
+        ringOpacity.value = withTiming(0.8, { duration: 500, easing: Easing.out(Easing.quad) });
+        brighten.value = withTiming(0, { duration: 500, easing: Easing.out(Easing.quad) });
         break;
 
       case 'processing':
         // Dynamic swirling energy
-        glowOpacity.value = withTiming(0.5, { duration: 400 });
-        ringOpacity.value = withTiming(0.6, { duration: 400 });
+        glowOpacity.value = withTiming(0.5, { duration: 400, easing: Easing.out(Easing.quad) });
+        ringOpacity.value = withTiming(0.6, { duration: 400, easing: Easing.out(Easing.quad) });
+        brighten.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.quad) });
         
         pulseScale.value = withRepeat(
           withSequence(
-            withTiming(1.2, { duration: 1000 }),
-            withTiming(1.05, { duration: 1000 })
+            withTiming(1.2, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1.05, { duration: 1200, easing: Easing.inOut(Easing.sin) })
           ),
           -1,
           true
@@ -94,8 +97,8 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
 
         innerPulse.value = withRepeat(
           withSequence(
-            withTiming(1.4, { duration: 800 }),
-            withTiming(1.1, { duration: 800 })
+            withTiming(1.4, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1.1, { duration: 1000, easing: Easing.inOut(Easing.sin) })
           ),
           -1,
           true
@@ -103,7 +106,7 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
         
         swirl.value = withRepeat(
           withTiming(360, { 
-            duration: 3000, 
+            duration: 4000, 
             easing: Easing.linear 
           }),
           -1,
@@ -112,21 +115,22 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
         break;
 
       case 'responding':
-        // Quick energy burst then gentle idle
-        pulseScale.value = withTiming(1, { duration: 100 });
-        innerPulse.value = withTiming(1, { duration: 100 });
-        glowOpacity.value = withTiming(0.3, { duration: 100 });
-        ringOpacity.value = withTiming(0.5, { duration: 100 });
+        // Subtle white glow to show acknowledgment - much gentler than before
+        pulseScale.value = withTiming(1.05, { duration: 200, easing: Easing.out(Easing.quad) });
+        innerPulse.value = withTiming(1.15, { duration: 200, easing: Easing.out(Easing.quad) });
+        glowOpacity.value = withTiming(0.6, { duration: 200, easing: Easing.out(Easing.quad) });
+        ringOpacity.value = withTiming(0.7, { duration: 200, easing: Easing.out(Easing.quad) });
         
-        flash.value = withSequence(
-          withTiming(1, { duration: 150, easing: Easing.out(Easing.quad) }),
-          withTiming(0, { duration: 150, easing: Easing.in(Easing.quad) })
+        // Gentle brighten effect instead of harsh flash
+        brighten.value = withSequence(
+          withTiming(0.4, { duration: 300, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 800, easing: Easing.out(Easing.quad) })
         );
 
-        // After flash, gentle idle animation
+        // After subtle acknowledgment, return to gentle idle
         setTimeout(() => {
-          glowOpacity.value = withTiming(0.2, { duration: 600 });
-          ringOpacity.value = withTiming(0.4, { duration: 600 });
+          glowOpacity.value = withTiming(0.2, { duration: 1000, easing: Easing.out(Easing.quad) });
+          ringOpacity.value = withTiming(0.4, { duration: 1000, easing: Easing.out(Easing.quad) });
           
           pulseScale.value = withRepeat(
             withSequence(
@@ -142,7 +146,7 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
             -1,
             false
           );
-        }, 300);
+        }, 500);
         break;
     }
   }, [state]);
@@ -166,9 +170,9 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
     opacity: ringOpacity.value * 0.8,
   }));
 
-  const flashStyle = useAnimatedStyle(() => ({
-    opacity: flash.value,
-    transform: [{ scale: pulseScale.value * 1.2 }],
+  const brightenStyle = useAnimatedStyle(() => ({
+    opacity: brighten.value,
+    transform: [{ scale: pulseScale.value * 1.1 }],
   }));
 
   // Get colors based on state
@@ -194,9 +198,9 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
         };
       case 'responding':
         return {
-          outer: ['rgba(252, 211, 77, 0.4)', 'rgba(245, 158, 11, 0.3)'], // amber-300 to amber-500
-          middle: ['rgba(252, 211, 77, 0.6)', 'rgba(245, 158, 11, 0.5)'],
-          inner: ['rgba(252, 211, 77, 0.8)', 'rgba(245, 158, 11, 0.7)'],
+          outer: ['rgba(59, 130, 246, 0.5)', 'rgba(147, 197, 253, 0.4)'], // blue-500 to blue-300
+          middle: ['rgba(59, 130, 246, 0.7)', 'rgba(147, 197, 253, 0.6)'],
+          inner: ['rgba(59, 130, 246, 0.9)', 'rgba(147, 197, 253, 0.8)'],
         };
       default:
         return {
@@ -241,10 +245,10 @@ export default function AuraProfileIcon({ state }: AuraProfileIconProps) {
         />
       </Animated.View>
 
-      {/* Flash overlay for responding state */}
-      <Animated.View style={[styles.flashOverlay, flashStyle]}>
+      {/* Subtle brighten overlay for responding state */}
+      <Animated.View style={[styles.brightenOverlay, brightenStyle]}>
         <LinearGradient
-          colors={['rgba(252, 211, 77, 0.9)', 'rgba(245, 158, 11, 0.7)']}
+          colors={['rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.1)']} // Soft white glow
           style={styles.ring}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -285,7 +289,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 50,
   },
-  flashOverlay: {
+  brightenOverlay: {
     position: 'absolute',
     width: 44,
     height: 44,
