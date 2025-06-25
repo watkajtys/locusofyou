@@ -21,9 +21,10 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight } from 'lucide-react-native';
+import { ArrowRight, Compass, Target, Brain, Lightbulb } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
 import OnboardingStepHeader from '@/components/OnboardingStepHeader';
+import OnboardingQuestion from '@/components/OnboardingQuestion';
 
 const { width, height } = Dimensions.get('window');
 
@@ -240,10 +241,11 @@ export default function OnboardingScreen() {
       case 'question1':
         return (
           <View style={styles.stepContainer}>
-            <View style={styles.messagesSection}>
-              <AIMessage text="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?" />
-            </View>
             <View style={styles.interactionSection}>
+              <OnboardingQuestion 
+                questionText="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?"
+                icon={<Compass size={24} color="#94a3b8" strokeWidth={2} />}
+              />
               <View style={styles.cardsContainer}>
                 <TouchableOpacity
                   style={styles.card}
@@ -270,14 +272,11 @@ export default function OnboardingScreen() {
       case 'question2':
         return (
           <View style={styles.stepContainer}>
-            <View style={styles.messagesSection}>
-              <AIMessage text="Okay, next..." />
-              <AIMessage 
-                text="When you achieve a major success, do you tend to credit it more to your disciplined preparation and hard work, or to being in the right place at the right time?"
-                delay={800}
-              />
-            </View>
             <View style={styles.interactionSection}>
+              <OnboardingQuestion 
+                questionText="When you achieve a major success, do you tend to credit it more to your disciplined preparation and hard work, or to being in the right place at the right time?"
+                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
+              />
               <View style={styles.cardsContainer}>
                 <TouchableOpacity
                   style={styles.card}
@@ -304,14 +303,11 @@ export default function OnboardingScreen() {
       case 'question3':
         return (
           <View style={styles.stepContainer}>
-            <View style={styles.messagesSection}>
-              <AIMessage text="Last one like this..." />
-              <AIMessage 
-                text="Do you feel that a person's ability to stay focused and organized is something they're mostly born with, or is it a skill that can be developed over time with the right strategies?"
-                delay={800}
-              />
-            </View>
             <View style={styles.interactionSection}>
+              <OnboardingQuestion 
+                questionText="Do you feel that a person's ability to stay focused and organized is something they're mostly born with, or is it a skill that can be developed over time with the right strategies?"
+                icon={<Brain size={24} color="#94a3b8" strokeWidth={2} />}
+              />
               <View style={styles.cardsContainer}>
                 <TouchableOpacity
                   style={styles.card}
@@ -359,7 +355,10 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <AIMessage text="When it comes to tackling a big project, where do you draw your energy from?" />
+              <OnboardingQuestion 
+                questionText="When it comes to tackling a big project, where do you draw your energy from?"
+                icon={<Lightbulb size={24} color="#94a3b8" strokeWidth={2} />}
+              />
             </View>
             <View style={styles.interactionSection}>
               <SliderComponent
@@ -385,10 +384,9 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <AIMessage text="Got it. One more like that..." />
-              <AIMessage 
-                text="When someone gives you critical feedback on your work, what's your initial instinct?"
-                delay={800}
+              <OnboardingQuestion 
+                questionText="When someone gives you critical feedback on your work, what's your initial instinct?"
+                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
               />
             </View>
             <View style={styles.interactionSection}>
@@ -489,13 +487,17 @@ export default function OnboardingScreen() {
         />
 
         {/* Fixed Content Area */}
-        <View style={styles.contentArea}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {showContent && (
             <Animated.View style={[styles.content, contentAnimatedStyle]}>
               {getStepContent()}
             </Animated.View>
           )}
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -567,20 +569,22 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  contentArea: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 16,
+    paddingBottom: 40,
   },
   content: {
     flex: 1,
   },
   stepContainer: {
-    flex: 1,
     minHeight: height - 150, // Ensure consistent minimum height
+    paddingVertical: 20,
   },
   messagesSection: {
-    minHeight: 200, // Reserved space for messages
-    paddingTop: 20,
+    minHeight: 120, // Reserved space for messages/questions
     paddingBottom: 20,
   },
   interactionSection: {
@@ -622,6 +626,7 @@ const styles = StyleSheet.create({
   cardsContainer: {
     gap: 16,
     width: '100%',
+    marginTop: 24,
   },
   card: {
     backgroundColor: '#ffffff',
@@ -647,6 +652,7 @@ const styles = StyleSheet.create({
   sliderContainer: {
     width: '100%',
     paddingHorizontal: 16,
+    marginTop: 20,
   },
   sliderLabel: {
     fontSize: 14,
@@ -701,6 +707,7 @@ const styles = StyleSheet.create({
   },
   textInputContainer: {
     width: '100%',
+    marginTop: 20,
   },
   textInput: {
     backgroundColor: '#ffffff',
