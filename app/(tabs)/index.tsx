@@ -11,11 +11,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Brain, Microscope, Heart, Shield } from 'lucide-react-native';
+import TypingIndicator from '@/components/TypingIndicator'; // Import TypingIndicator
 
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [isFirstBubbleLoading, setIsFirstBubbleLoading] = useState(true);
+  const [isSecondBubbleLoading, setIsSecondBubbleLoading] = useState(true);
+  const [isThirdBubbleLoading, setIsThirdBubbleLoading] = useState(true);
 
   // Animation values
   const avatarOpacity = useSharedValue(0);
@@ -50,28 +54,43 @@ export default function WelcomeScreen() {
 
       // First bubble (after avatar)
       setTimeout(() => {
+        // Show first bubble container, loading indicator will be inside
         firstBubbleOpacity.value = withTiming(1, { duration: 600 });
         firstBubbleTranslateY.value = withTiming(0, { duration: 600 });
-
-        // Second bubble (1.5s after first)
+        // Simulate loading time for first bubble
         setTimeout(() => {
+          setIsFirstBubbleLoading(false);
+        }, 1000); // Adjust this delay as needed
+
+        // Second bubble (1.5s after first bubble text appears)
+        setTimeout(() => {
+          // Show second bubble container
           secondBubbleOpacity.value = withTiming(1, { duration: 600 });
           secondBubbleTranslateY.value = withTiming(0, { duration: 600 });
+          // Simulate loading time for second bubble
+          setTimeout(() => {
+            setIsSecondBubbleLoading(false);
+          }, 1200); // Adjust this delay as needed
 
-          // Trust pillars (same time as second bubble)
+          // Trust pillars (same time as second bubble container appears)
           pillarsOpacity.value = withTiming(1, { duration: 800 });
 
-          // Third bubble and cards (after second bubble)
+          // Third bubble and cards (1s after second bubble text appears)
           setTimeout(() => {
+            // Show third bubble container
             thirdBubbleOpacity.value = withTiming(1, { duration: 600 });
             thirdBubbleTranslateY.value = withTiming(0, { duration: 600 });
+            // Simulate loading time for third bubble
+            setTimeout(() => {
+              setIsThirdBubbleLoading(false);
+            }, 1000); // Adjust this delay as needed
 
             setTimeout(() => {
               cardsOpacity.value = withTiming(1, { duration: 600 });
               cardsTranslateY.value = withTiming(0, { duration: 600 });
-            }, 300);
-          }, 1000);
-        }, 1500);
+            }, 300); // This delay is for cards after third bubble text appears
+          }, 1000 + 1200); // Delay from previous + current loading
+        }, 1500 + 1000); // Delay from previous + current loading
       }, 800);
     }, 500);
   }, []);
@@ -160,21 +179,33 @@ export default function WelcomeScreen() {
               <Animated.View style={[styles.chatBubbleContainer, firstBubbleAnimatedStyle]}>
                 <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
                 <View style={styles.chatBubble}>
-                  <Text style={styles.chatText}>Welcome.</Text>
+                  {isFirstBubbleLoading ? (
+                    <TypingIndicator isVisible={true} />
+                  ) : (
+                    <Text style={styles.chatText}>Welcome.</Text>
+                  )}
                 </View>
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, secondBubbleAnimatedStyle]}>
                 <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
                 <View style={styles.chatBubble}>
-                  <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace.</Text>
+                  {isSecondBubbleLoading ? (
+                    <TypingIndicator isVisible={true} />
+                  ) : (
+                    <Text style={styles.chatText}>I'm here to be a supportive partner, at your pace.</Text>
+                  )}
                 </View>
               </Animated.View>
 
               <Animated.View style={[styles.chatBubbleContainer, thirdBubbleAnimatedStyle]}>
                 <Animated.View style={[styles.bubbleGlow, glowAnimatedStyle]} />
                 <View style={styles.chatBubble}>
-                  <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
+                  {isThirdBubbleLoading ? (
+                    <TypingIndicator isVisible={true} />
+                  ) : (
+                    <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
+                  )}
                 </View>
               </Animated.View>
             </View>
