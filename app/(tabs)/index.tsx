@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Animated, {
@@ -14,8 +14,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Microscope, Heart, Shield, Compass, Target } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
 import AuraProfileIcon from '@/components/AuraProfileIcon';
-
-const { width, height } = Dimensions.get('window');
 
 type InteractionState = 'none' | 'touching' | 'selected' | 'transitioning';
 
