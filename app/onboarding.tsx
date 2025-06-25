@@ -21,8 +21,9 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Brain, ChevronLeft, ArrowRight } from 'lucide-react-native';
+import { ChevronLeft, ArrowRight } from 'lucide-react-native';
 import TypingIndicator from '@/components/TypingIndicator';
+import AuraProfileIcon from '@/components/AuraProfileIcon';
 
 const { width, height } = Dimensions.get('window');
 
@@ -191,6 +192,26 @@ export default function OnboardingScreen() {
           onboardingData: JSON.stringify(onboardingData)
         }
       });
+    }
+  };
+
+  // Get appropriate aura state based on current step
+  const getAuraState = (): 'idle' | 'listening' | 'processing' | 'responding' => {
+    switch (currentStep) {
+      case 'welcome':
+        return 'processing';
+      case 'question1':
+      case 'question2':
+      case 'question3':
+      case 'question4':
+        return 'listening';
+      case 'slider1':
+      case 'slider2':
+        return 'responding';
+      case 'final-question':
+        return 'listening';
+      default:
+        return 'idle';
     }
   };
 
@@ -473,14 +494,7 @@ export default function OnboardingScreen() {
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Getting to know you</Text>
             <View style={styles.avatarContainer}>
-              <LinearGradient
-                colors={['#a855f7', '#6366f1']}
-                style={styles.avatar}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Brain size={20} color="#fff" strokeWidth={2} />
-              </LinearGradient>
+              <AuraProfileIcon state={getAuraState()} />
             </View>
           </View>
         </View>
@@ -585,13 +599,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     color: '#334155',
   },
-  avatarContainer: {},
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarContainer: {
+    // Remove the previous styling as AuraProfileIcon handles its own styling
   },
   contentArea: {
     flex: 1,
