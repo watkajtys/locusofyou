@@ -208,7 +208,7 @@ export default function ChatScreen() {
       addMessage({
         text: "",
         isUser: false,
-        isLoading: true,
+        isLoading: true,  
         actualText: responseText
       }, aiMessageId);
 
@@ -321,14 +321,9 @@ export default function ChatScreen() {
             ))}
           </ScrollView>
 
-          {/* Input Area - Fixed to bottom with gradient fade */}
+          {/* Input Area - Fully transparent container */}
           <View style={styles.inputContainer}>
-            {/* Soft gradient fade from transparent to opaque white */}
-            <LinearGradient
-              colors={['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 1)']}
-              style={styles.inputGradient}
-            />
-            {/* Input field container with seamless design */}
+            {/* Input field container with white background and styling */}
             <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.textInput}
@@ -471,30 +466,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#ffffff',
   },
-  // Enhanced input area styles
+  // Fully transparent input container
   inputContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16, // Horizontal padding as requested
-    paddingBottom: 16,     // Bottom padding as requested
-    backgroundColor: 'transparent',
-  },
-  inputGradient: {
-    position: 'absolute',
-    top: -40,
-    left: 0,
-    right: 0,
-    height: 40, // Increased height for better fade effect
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: 'transparent', // Fully transparent
+    // No shadows or background effects
   },
   inputWrapper: {
     flexDirection: 'row',
-    alignItems: 'center', // Changed from 'flex-end' to 'center' as requested
-    backgroundColor: '#ffffff', // White background
-    borderRadius: 24, // Fully rounded corners (rounded-full equivalent)
+    alignItems: 'center',
+    backgroundColor: '#ffffff', // White background for input field
+    borderRadius: 24, // Fully rounded corners
     borderWidth: 1,
-    borderColor: '#e2e8f0', // Subtle border (border-slate-200)
+    borderColor: '#e2e8f0', // Subtle border
     paddingHorizontal: 4,
     paddingVertical: 4,
     // Enhanced shadow for tangible, elevated feel
@@ -505,19 +494,18 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   textInput: {
-    flex: 1, // Flexible as requested
+    flex: 1,
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#1e293b',
-    paddingHorizontal: 16, // Horizontal padding
-    paddingVertical: 12,   // Vertical padding
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     maxHeight: 100,
-    // No background color as requested (inherits from wrapper)
   },
   sendButton: {
-    width: 40,  // Circle dimensions
-    height: 40, // Circle dimensions
-    borderRadius: 20, // Perfect circle
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
@@ -529,7 +517,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   sendButtonActive: {
-    backgroundColor: '#3b82f6', // Vibrant blue (blue-500) for clear call to action
+    backgroundColor: '#3b82f6', // Vibrant blue for clear call to action
   },
   sendButtonInactive: {
     backgroundColor: '#e2e8f0', // Subtle inactive state
