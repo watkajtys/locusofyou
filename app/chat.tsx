@@ -36,7 +36,15 @@ interface Message {
   actualText?: string;
 }
 
-const AIMessageBubble = ({ message, delay = 0 }: { message: string; delay?: number }) => {
+const AIMessageBubble = ({ 
+  message, 
+  isLoading = false, 
+  delay = 0 
+}: { 
+  message: string; 
+  isLoading?: boolean; 
+  delay?: number;
+}) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(30);
 
@@ -55,7 +63,11 @@ const AIMessageBubble = ({ message, delay = 0 }: { message: string; delay?: numb
   return (
     <Animated.View style={[styles.aiMessageContainer, animatedStyle]}>
       <View style={styles.aiMessageBubble}>
-        <Text style={styles.aiMessageText}>{message}</Text>
+        {isLoading ? (
+          <TypingIndicator isVisible={true} showBubble={false} />
+        ) : (
+          <Text style={styles.aiMessageText}>{message}</Text>
+        )}
       </View>
     </Animated.View>
   );
@@ -97,16 +109,49 @@ export default function ChatScreen() {
       false
     );
 
-    // Initialize chat with welcome messages
+    // Initialize chat with welcome messages using typing indicators
     setTimeout(() => {
-      const welcomeMessage = getWelcomeMessage(coachingStyle);
-      const followUpMessage = getFollowUpMessage(coachingStyle);
+      const welcomeMessageId = "welcome-msg";
+      const welcomeText = getWelcomeMessage(coachingStyle);
       
-      addMessage({ text: welcomeMessage, isUser: false });
-      
+      // Add loading message first
+      addMessage({
+        text: "",
+        isUser: false,
+        isLoading: true,
+        actualText: welcomeText
+      }, welcomeMessageId);
+
+      // Show actual text after loading delay
       setTimeout(() => {
-        addMessage({ text: followUpMessage, isUser: false });
-      }, 2000);
+        updateMessage(welcomeMessageId, {
+          text: welcomeText,
+          isLoading: false,
+          actualText: undefined
+        });
+
+        // Add follow-up message with typing indicator
+        setTimeout(() => {
+          const followUpMessageId = "followup-msg";
+          const followUpText = getFollowUpMessage(coachingStyle);
+          
+          addMessage({
+            text: "",
+            isUser: false,
+            isLoading: true,
+            actualText: followUpText
+          }, followUpMessageId);
+
+          // Show follow-up text after loading delay
+          setTimeout(() => {
+            updateMessage(followUpMessageId, {
+              text: followUpText,
+              isLoading: false,
+              actualText: undefined
+            });
+          }, 1200);
+        }, 800);
+      }, 1000);
     }, 1500);
   }, [coachingStyle]);
 
@@ -126,15 +171,25 @@ export default function ChatScreen() {
     }
   };
 
-  const addMessage = (messageData: Omit<Message, 'timestamp' | 'id'>) => {
+  const addMessage = (messageData: Omit<Message, 'timestamp' | 'id'>, id?: string) => {
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: id || Date.now().toString(),
       timestamp: new Date(),
       ...messageData,
     };
     
     setMessages(prev => [...prev, newMessage]);
     
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    return newMessage.id;
+  };
+
+  const updateMessage = (id: string, updates: Partial<Message>) => {
+    setMessages(prev =>
+      prev.map(msg => (msg.id === id ? { ...msg, ...updates } : msg))
+    );
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
@@ -146,10 +201,25 @@ export default function ChatScreen() {
       const currentInput = inputText;
       setInputText('');
       
+      // Add AI response with typing indicator
+      const aiMessageId = Date.now().toString() + "-ai";
+      const responseText = generateAIResponse(currentInput, coachingStyle);
+      
+      addMessage({
+        text: "",
+        isUser: false,
+        isLoading: true,
+        actualText: responseText
+      }, aiMessageId);
+
+      // Show actual response after loading delay
       setTimeout(() => {
-        const response = generateAIResponse(currentInput, coachingStyle);
-        addMessage({ text: response, isUser: false });
-      }, 1000 + Math.random() * 1500);
+        updateMessage(aiMessageId, {
+          text: responseText,
+          isLoading: false,
+          actualText: undefined
+        });
+      }, 1500 + Math.random() * 1000);
     }
   };
 
@@ -244,7 +314,8 @@ export default function ChatScreen() {
                 <AIMessageBubble 
                   key={message.id} 
                   message={message.text} 
-                  delay={index * 400}
+                  isLoading={message.isLoading}
+                  delay={0} // Remove staggered delay since messages appear individually
                 />
               )
             ))}
@@ -370,6 +441,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    minHeight: 44, // Ensure consistent height for typing indicator
   },
   aiMessageText: {
     fontSize: 16,
