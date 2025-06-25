@@ -7,6 +7,8 @@ import {
   ScrollView,
   TextInput,
   Dimensions,
+  PanResponder,
+  Animated as RNAnimated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -134,19 +136,15 @@ export default function OnboardingScreen() {
     setInteractionState('none');
   };
 
-  // Auto-advance handlers for sliders
-  const handleSlider1AutoAdvance = () => {
+  const handleSliderComplete = (stepType: 'slider1' | 'slider2') => {
     setInteractionState('selected');
     setTimeout(() => {
-      animateToNextStep('slider-transition');
-    }, 300);
-  };
-
-  const handleSlider2AutoAdvance = () => {
-    setInteractionState('selected');
-    setTimeout(() => {
-      animateToNextStep('final-question');
-    }, 300);
+      if (stepType === 'slider1') {
+        animateToNextStep('slider-transition');
+      } else if (stepType === 'slider2') {
+        animateToNextStep('final-question');
+      }
+    }, 500);
   };
 
   const handleFinalSubmit = () => {
@@ -318,9 +316,19 @@ export default function OnboardingScreen() {
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, extraversion: value }))}
                 onInteractionStart={handleInteractionStart}
                 onInteractionEnd={handleInteractionEnd}
-                onAutoAdvance={handleSlider1AutoAdvance} // Auto-advance after 1 second
                 icon={<Lightbulb size={24} color="#94a3b8" strokeWidth={2} />}
               />
+            </View>
+            <View style={styles.actionSection}>
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={() => handleSliderComplete('slider1')}
+                onPressIn={handleInteractionStart}
+                onPressOut={handleInteractionEnd}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.continueButtonText}>Continue</Text>
+              </TouchableOpacity>
             </View>
           </View>
         );
@@ -350,9 +358,19 @@ export default function OnboardingScreen() {
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, agreeableness: value }))}
                 onInteractionStart={handleInteractionStart}
                 onInteractionEnd={handleInteractionEnd}
-                onAutoAdvance={handleSlider2AutoAdvance} // Auto-advance after 1 second
                 icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
               />
+            </View>
+            <View style={styles.actionSection}>
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={() => handleSliderComplete('slider2')}
+                onPressIn={handleInteractionStart}
+                onPressOut={handleInteractionEnd}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.continueButtonText}>Continue</Text>
+              </TouchableOpacity>
             </View>
           </View>
         );
@@ -604,6 +622,25 @@ const styles = StyleSheet.create({
     color: '#1e293b',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  continueButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 24,
+    alignSelf: 'center',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    minWidth: 120,
+  },
+  continueButtonText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: '#ffffff',
+    textAlign: 'center',
   },
   textInputContainer: {
     width: '100%',
