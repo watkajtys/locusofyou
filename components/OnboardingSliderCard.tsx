@@ -1,12 +1,20 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  PanResponder,
-  Animated as RNAnimated,
   LayoutChangeEvent,
 } from 'react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 
 interface OnboardingSliderCardProps {
   questionText: string;
@@ -31,88 +39,123 @@ export default function OnboardingSliderCard({
   disabled = false,
   icon
 }: OnboardingSliderCardProps) {
-  const [sliderWidth, setSliderWidth] = React.useState(0);
-  const thumbPosition = useRef(new RNAnimated.Value(0)).current;
-  const thumbScale = useRef(new RNAnimated.Value(1)).current;
-  const trackProgress = useRef(new RNAnimated.Value(0)).current;
+  // Shared values for animations
+  const sliderWidth = useSharedValue(0);
+  const thumbPosition = useSharedValue(0);
+  const thumbScale = useSharedValue(1);
+  const trackProgress = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width: newWidth } = event.nativeEvent.layout;
-    setSliderWidth(newWidth);
+    sliderWidth.value = newWidth;
+    
+    // Set initial position based on current value
+    const initialPosition = (value / 100) * newWidth;
+    thumbPosition.value = initialPosition;
+    trackProgress.value = value / 100;
   };
-
-  useEffect(() => {
-    if (sliderWidth > 0) {
-      const initialPosition = (value / 100) * sliderWidth;
-      thumbPosition.setValue(initialPosition);
-      trackProgress.setValue(value / 100);
-    }
-  }, [sliderWidth, value]); // Initial position set when sliderWidth is known
-
-  const valueAtGrant = useRef(0); // Store position of thumb when gesture starts
-
-  // We need refs to access current values in PanResponder
-  const sliderWidthRef = useRef(sliderWidth);
-  useEffect(() => {
-    sliderWidthRef.current = sliderWidth;
-  }, [sliderWidth]);
-
-  const panResponderRef = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled && sliderWidthRef.current > 0,
-      onMoveShouldSetPanResponder: () => !disabled && sliderWidthRef.current > 0,
-      onPanResponderGrant: (evt) => {
-        if (disabled || sliderWidthRef.current <= 0) return;
-        onInteractionStart?.();
-        RNAnimated.spring(thumbScale, { toValue: 1.2, useNativeDriver: false, tension: 150, friction: 8 }).start();
-
-        const currentSliderWidth = sliderWidthRef.current;
-        const touchX = evt.nativeEvent.locationX; // Relative to sliderWrapper
-        const clampedX = Math.max(0, Math.min(currentSliderWidth, touchX));
-        valueAtGrant.current = clampedX; // Store the grant position
-
-        const newValue = Math.round((clampedX / currentSliderWidth) * 100);
-
-        RNAnimated.spring(thumbPosition, { toValue: clampedX, useNativeDriver: false, tension: 150, friction: 8 }).start();
-        RNAnimated.timing(trackProgress, { toValue: clampedX / currentSliderWidth, duration: 150, useNativeDriver: false }).start();
-        onValueChange(newValue);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (disabled || sliderWidthRef.current <= 0) return;
-        const currentSliderWidth = sliderWidthRef.current;
-        let newPosition = Math.max(0, Math.min(currentSliderWidth, valueAtGrant.current + gestureState.dx));
-        const newValue = Math.round((newPosition / currentSliderWidth) * 100);
-
-        thumbPosition.setValue(newPosition);
-        trackProgress.setValue(newPosition / currentSliderWidth);
-        onValueChange(newValue);
-      },
-      onPanResponderRelease: () => {
-        if (disabled || sliderWidthRef.current <= 0) return;
-        RNAnimated.spring(thumbScale, { toValue: 1, useNativeDriver: false, tension: 150, friction: 8 }).start();
-        onInteractionEnd?.();
-      },
-    })
-  ).current;
 
   // Update thumb position when value changes externally
   useEffect(() => {
-    if (sliderWidth > 0) { // Ensure sliderWidth is calculated before setting position
-      const targetPosition = (value / 100) * sliderWidth;
-      RNAnimated.spring(thumbPosition, {
-        toValue: targetPosition,
-        useNativeDriver: false,
-        tension: 150,
-        friction: 8,
-      }).start();
-      
-      RNAnimated.timing(trackProgress, {
-        toValue: value / 100,
-        duration: 200,
-        useNativeDriver: false,
-      }).start();
+    if (sliderWidth.value > 0) {
+      const targetPosition = (value / 100) * sliderWidth.value;
+      thumbPosition.value = withSpring(targetPosition, {
+        damping: 20,
+        stiffness: 200,
+      });
+      trackProgress.value = withTiming(value / 100, { duration: 200 });
     }
-  }, [value, sliderWidth]);
+  }, [value]);
+
+  // Gesture handler
+  const panGesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onStart((event) => {
+      runOnJS(onInteractionStart || (() => {}))();
+      
+      // Scale up thumb and show glow
+      thumbScale.value = withSpring(1.3, {
+        damping: 15,
+        stiffness: 300,
+      });
+      glowOpacity.value = withTiming(0.6, { duration: 150 });
+
+      // If user taps directly on track, jump to that position
+      const tapX = event.x;
+      const clampedX = Math.max(0, Math.min(sliderWidth.value, tapX));
+      const newValue = Math.round((clampedX / sliderWidth.value) * 100);
+      
+      thumbPosition.value = withSpring(clampedX, {
+        damping: 20,
+        stiffness: 200,
+      });
+      trackProgress.value = withTiming(clampedX / sliderWidth.value, { duration: 150 });
+      
+      runOnJS(onValueChange)(newValue);
+    })
+    .onUpdate((event) => {
+      if (sliderWidth.value <= 0) return;
+      
+      const newX = event.x;
+      const clampedX = Math.max(0, Math.min(sliderWidth.value, newX));
+      const newValue = Math.round((clampedX / sliderWidth.value) * 100);
+      
+      thumbPosition.value = clampedX;
+      trackProgress.value = clampedX / sliderWidth.value;
+      
+      runOnJS(onValueChange)(newValue);
+    })
+    .onEnd(() => {
+      // Scale down thumb and hide glow
+      thumbScale.value = withSpring(1, {
+        damping: 15,
+        stiffness: 300,
+      });
+      glowOpacity.value = withTiming(0, { duration: 200 });
+      
+      runOnJS(onInteractionEnd || (() => {}))();
+    });
+
+  // Animated styles
+  const thumbAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: thumbPosition.value - 16 }, // Center the thumb (32px width / 2)
+        { scale: thumbScale.value },
+      ],
+    };
+  });
+
+  const trackProgressAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      width: `${trackProgress.value * 100}%`,
+    };
+  });
+
+  const thumbGlowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: glowOpacity.value,
+      transform: [
+        { translateX: thumbPosition.value - 20 }, // Center the glow (40px width / 2)
+        { scale: thumbScale.value * 0.8 },
+      ],
+    };
+  });
+
+  const trackGlowStyle = useAnimatedStyle(() => {
+    const glowWidth = interpolate(
+      trackProgress.value,
+      [0, 1],
+      [0, 100],
+      Extrapolation.CLAMP
+    );
+    
+    return {
+      width: `${glowWidth}%`,
+      opacity: glowOpacity.value * 0.3,
+    };
+  });
 
   return (
     <View style={styles.card}>
@@ -128,40 +171,27 @@ export default function OnboardingSliderCard({
       
       {/* Slider Container */}
       <View style={styles.sliderContainer}>
-        <View
-          style={styles.sliderWrapper}
-          onLayout={handleLayout} // Get width dynamically
-          {...panResponderRef.panHandlers} // Use the ref for PanResponder
-        >
-          {/* Track Background */}
-          <View style={styles.trackBackground} />
-          
-          {/* Track Progress */}
-          <RNAnimated.View 
-            style={[
-              styles.trackProgress,
-              {
-                width: trackProgress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              }
-            ]} 
-          />
-          
-          {/* Thumb */}
-          <RNAnimated.View 
-            style={[
-              styles.thumb,
-              {
-                left: thumbPosition,
-                transform: [{ scale: thumbScale }],
-              }
-            ]} 
-          >
-            <View style={styles.thumbInner} />
-          </RNAnimated.View>
-        </View>
+        <GestureDetector gesture={panGesture}>
+          <View style={styles.sliderWrapper} onLayout={handleLayout}>
+            {/* Track Background */}
+            <View style={styles.trackBackground} />
+            
+            {/* Track Glow (subtle background glow) */}
+            <Animated.View style={[styles.trackGlow, trackGlowStyle]} />
+            
+            {/* Track Progress */}
+            <Animated.View style={[styles.trackProgress, trackProgressAnimatedStyle]} />
+            
+            {/* Thumb Glow (appears on interaction) */}
+            <Animated.View style={[styles.thumbGlow, thumbGlowStyle]} />
+            
+            {/* Thumb */}
+            <Animated.View style={[styles.thumb, thumbAnimatedStyle]}>
+              <View style={styles.thumbInner} />
+              <View style={styles.thumbCore} />
+            </Animated.View>
+          </View>
+        </GestureDetector>
       </View>
       
       {/* Labels */}
@@ -206,46 +236,67 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sliderWrapper: {
-    height: 60,
+    height: 80, // Increased height for easier interaction
     justifyContent: 'center',
     position: 'relative',
   },
   trackBackground: {
-    height: 6,
+    height: 8, // Slightly thicker track
     backgroundColor: '#e2e8f0', // slate-200
-    borderRadius: 3,
+    borderRadius: 4,
     position: 'absolute',
     left: 0,
     right: 0,
   },
-  trackProgress: {
-    height: 6,
-    backgroundColor: '#3b82f6', // blue-500
-    borderRadius: 3,
+  trackGlow: {
+    height: 8,
+    backgroundColor: '#bfdbfe', // blue-200
+    borderRadius: 4,
     position: 'absolute',
     left: 0,
   },
+  trackProgress: {
+    height: 8,
+    backgroundColor: '#3b82f6', // blue-500
+    borderRadius: 4,
+    position: 'absolute',
+    left: 0,
+  },
+  thumbGlow: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#93c5fd', // blue-300
+    top: -16,
+  },
   thumb: {
     position: 'absolute',
-    width: 28,
-    height: 28,
-    marginLeft: -14,
-    marginTop: -11,
+    width: 32,
+    height: 32,
+    top: -12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   thumbInner: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#3b82f6', // blue-500
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
     shadowColor: '#3b82f6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 3,
-    borderColor: '#ffffff',
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    position: 'absolute',
+  },
+  thumbCore: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#3b82f6', // blue-500
   },
   labelsContainer: {
     flexDirection: 'row',
