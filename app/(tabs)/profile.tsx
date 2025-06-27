@@ -7,7 +7,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Profile</Text>
-        <Text style={styles.subtitle}>Your AI coaching journey continues here</Text>
+        <Text style={styles.subtitle}>Your LocusOfYou coaching journey continues here</Text>
       </View>
     </SafeAreaView>
   );

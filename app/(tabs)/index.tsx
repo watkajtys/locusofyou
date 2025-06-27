@@ -194,10 +194,10 @@ export default function WelcomeScreen() {
             {/* Header Section */}
             <View style={styles.headerContainer}>
               <Text style={styles.headline}>
-                The first AI coach that understands why you're stuck.
+                The first AI coach that understands *why* you're stuck.
               </Text>
               <Text style={styles.subHeadline}>
-                I'm a new type of AI coach that uses proven psychology to diagnose the root of inaction and help you build lasting motivation.
+                LocusOfYou is a new type of AI coach. We use proven psychology to diagnose the root of procrastination and inaction, helping you build lasting motivation and reclaim your personal agency.
               </Text>
             </View>
 
@@ -236,7 +236,7 @@ export default function WelcomeScreen() {
                     {isThirdBubbleLoading ? (
                       <TypingIndicator isVisible={true} showBubble={false} />
                     ) : (
-                      <Text style={styles.chatText}>To start, I have one quick question to understand your style.</Text>
+                      <Text style={styles.chatText}>To get started, I have one quick question to understand your style.</Text>
                     )}
                   </View>
                 </Animated.View>
