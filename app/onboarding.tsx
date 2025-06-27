@@ -21,7 +21,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowRight, Compass, Target, Brain, Lightbulb, Star, Shield } from 'lucide-react-native';
+import { ArrowRight, Compass, Target, Brain, Lightbulb, Star, Shield, Map, Wand, Gift, Leaf, Lock, Zap } from 'lucide-react-native'; // Added Map, Wand, Gift, Leaf, Lock, Zap (for sparkle)
 import TypingIndicator from '@/components/TypingIndicator';
 import OnboardingStepHeader from '@/components/OnboardingStepHeader';
 import OnboardingQuestion from '@/components/OnboardingQuestion';
@@ -33,6 +33,7 @@ const { width, height } = Dimensions.get('window');
 
 interface OnboardingData {
   coachingStyle: string;
+  conscientiousness: 'planner' | 'adapter' | null;
   regulatoryFocus: 'promotion' | 'prevention' | null;
   locusOfControl: 'internal' | 'external' | null;
   mindset: 'fixed' | 'growth' | null;
@@ -41,27 +42,32 @@ interface OnboardingData {
   currentFocus: string;
 }
 
-type InteractionStep = 
-  | 'welcome'
-  | 'question1' 
-  | 'question2'
-  | 'question3'
-  | 'transition-to-sliders'
-  | 'slider1'
-  | 'slider-transition'
-  | 'slider2'
-  | 'final-question'
+type InteractionStep =
+  | 'initialMessages'
+  | 'conscientiousnessQuestion'
+  | 'transitionToRegulatory'
+  | 'regulatoryFocusQuestion'
+  | 'transitionToLocus'
+  | 'locusOfControlQuestion'
+  | 'transitionToMindset'
+  | 'mindsetQuestion'
+  | 'transitionToSliders'
+  | 'extraversionSlider'
+  | 'transitionToAgreeableness'
+  | 'agreeablenessSlider'
+  | 'finalMessagesAndInput'
   | 'complete';
 
 type InteractionState = 'none' | 'touching' | 'selected' | 'transitioning';
 
 export default function OnboardingScreen() {
   const { coachingStyle } = useLocalSearchParams<{ coachingStyle: string }>();
-  const [currentStep, setCurrentStep] = useState<InteractionStep>('welcome');
+  const [currentStep, setCurrentStep] = useState<InteractionStep>('initialMessages');
   const [showContent, setShowContent] = useState(false);
   const [interactionState, setInteractionState] = useState<InteractionState>('none');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
-    coachingStyle: coachingStyle || 'adapter',
+    coachingStyle: coachingStyle || 'adapter', // Default if not passed via params
+    conscientiousness: null,
     regulatoryFocus: null,
     locusOfControl: null,
     mindset: null,
@@ -109,14 +115,17 @@ export default function OnboardingScreen() {
     
     setTimeout(() => {
       switch (currentStep) {
-        case 'question1':
-          animateToNextStep('question2');
+        case 'conscientiousnessQuestion':
+          animateToNextStep('transitionToRegulatory');
           break;
-        case 'question2':
-          animateToNextStep('question3');
+        case 'regulatoryFocusQuestion':
+          animateToNextStep('transitionToLocus');
           break;
-        case 'question3':
-          animateToNextStep('transition-to-sliders');
+        case 'locusOfControlQuestion':
+          animateToNextStep('transitionToMindset');
+          break;
+        case 'mindsetQuestion':
+          animateToNextStep('transitionToSliders');
           break;
         default:
           break;
@@ -124,9 +133,8 @@ export default function OnboardingScreen() {
     }, 300);
   };
 
-  const handleChoiceButtonPress = (choice: 'promotion' | 'prevention') => {
-    handleCardChoice(choice, 'regulatoryFocus');
-  };
+  // handleChoiceButtonPress is removed as it's no longer used.
+  // The regulatoryFocusQuestion now directly calls handleCardChoice.
 
   const handleInteractionStart = () => {
     setInteractionState('touching');
@@ -136,13 +144,13 @@ export default function OnboardingScreen() {
     setInteractionState('none');
   };
 
-  const handleSliderComplete = (stepType: 'slider1' | 'slider2') => {
+  const handleSliderComplete = (stepType: 'extraversionSlider' | 'agreeablenessSlider') => {
     setInteractionState('selected');
     setTimeout(() => {
-      if (stepType === 'slider1') {
-        animateToNextStep('slider-transition');
-      } else if (stepType === 'slider2') {
-        animateToNextStep('final-question');
+      if (stepType === 'extraversionSlider') {
+        animateToNextStep('transitionToAgreeableness');
+      } else if (stepType === 'agreeablenessSlider') {
+        animateToNextStep('finalMessagesAndInput');
       }
     }, 500);
   };
@@ -176,16 +184,20 @@ export default function OnboardingScreen() {
       default:
         // Base state on current step
         switch (currentStep) {
-          case 'welcome':
-          case 'transition-to-sliders':
-          case 'slider-transition':
-            return 'processing';
-          case 'question1':
-          case 'question2':
-          case 'question3':
-          case 'slider1':
-          case 'slider2':
-          case 'final-question':
+          case 'initialMessages':
+          case 'transitionToRegulatory':
+          case 'transitionToLocus':
+          case 'transitionToMindset':
+          case 'transitionToSliders':
+          case 'transitionToAgreeableness':
+          case 'finalMessagesAndInput': // Part of this is messages
+            return 'processing'; // Or 'responding' if AI is "speaking"
+          case 'conscientiousnessQuestion':
+          case 'regulatoryFocusQuestion':
+          case 'locusOfControlQuestion':
+          case 'mindsetQuestion':
+          case 'extraversionSlider':
+          case 'agreeablenessSlider':
             return 'listening';
           default:
             return 'idle';
@@ -195,46 +207,126 @@ export default function OnboardingScreen() {
 
   const getStepContent = () => {
     switch (currentStep) {
-      case 'welcome':
+      case 'initialMessages':
         return (
-          <View style={styles.stepContainer}>
+          <View key="initialMessages" style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <AIMessage text="Got it. That's helpful." />
-              <AIMessage 
-                text="A few more quick questions to get a clearer picture of your style. Just choose the one that feels closer to your truth." 
-                delay={1000}
-                onComplete={() => setTimeout(() => animateToNextStep('question1'), 1000)}
+              <AIMessage text="Welcome." />
+              <AIMessage text="I'm here to be a supportive partner, at your pace. No pressure." delay={1200} />
+              <AIMessage
+                text="To get started, I have one quick question to understand your style."
+                delay={3000}
+                onComplete={() => setTimeout(() => animateToNextStep('conscientiousnessQuestion'), 1000)}
               />
             </View>
           </View>
         );
 
-      case 'question1':
+      case 'conscientiousnessQuestion':
         return (
-          <View style={styles.stepContainer}>
+          <View key="conscientiousnessQuestion" style={styles.stepContainer}>
             <View style={styles.interactionSection}>
-              <OnboardingQuestion 
-                questionText="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?"
-                icon={<Compass size={24} color="#94a3b8" strokeWidth={2} />}
+              <OnboardingQuestion
+                questionText="When you're at your best, are you more of a meticulous planner who loves a detailed roadmap, or a flexible adapter who thrives on creative problem-solving?"
+                // Icon can be dynamic based on question, or a generic one. For now, no icon here.
               />
-              <View style={styles.choiceButtonsContainer}>
-                <OnboardingChoiceButtons 
-                  onChoice={handleChoiceButtonPress} 
-                  onInteractionStart={handleInteractionStart}
-                  onInteractionEnd={handleInteractionEnd}
-                />
+              <View style={styles.cardsContainer}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('planner', 'conscientiousness')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.cardContentContainer}>
+                    <Map size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Meticulous Planner</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('adapter', 'conscientiousness')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.cardContentContainer}>
+                    <Wand size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Flexible Adapter</Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         );
 
-      case 'question2':
+      case 'transitionToRegulatory':
         return (
-          <View style={styles.stepContainer}>
+          <View key="transitionToRegulatory" style={styles.stepContainer}>
+            <View style={styles.messagesSection}>
+              <OnboardingTransitionMessage
+                message="Got it. That's helpful. A few more quick questions to get a clearer picture of your style. Just choose the one that feels closer to your truth."
+                onComplete={() => setTimeout(() => animateToNextStep('regulatoryFocusQuestion'), 1000)}
+              />
+            </View>
+          </View>
+        );
+
+      case 'regulatoryFocusQuestion':
+        return (
+          <View key="regulatoryFocusQuestion" style={styles.stepContainer}>
             <View style={styles.interactionSection}>
-              <OnboardingQuestion 
+              <OnboardingQuestion
+                questionText="Thinking about what drives you towards a goal, does it feel more like you're striving to achieve a positive outcome, or more like you're working hard to prevent a negative one?"
+              />
+              <View style={styles.cardsContainer}>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('promotion', 'regulatoryFocus')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.cardContentContainer}>
+                    <Star size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Striving to achieve a positive outcome</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => handleCardChoice('prevention', 'regulatoryFocus')}
+                  onPressIn={handleInteractionStart}
+                  onPressOut={handleInteractionEnd}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.cardContentContainer}>
+                    <Shield size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Working hard to prevent a negative one</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        );
+
+      case 'transitionToLocus':
+        return (
+          <View key="transitionToLocus" style={styles.stepContainer}>
+            <View style={styles.messagesSection}>
+              <OnboardingTransitionMessage
+                message="Okay, next..."
+                onComplete={() => setTimeout(() => animateToNextStep('locusOfControlQuestion'), 800)}
+              />
+            </View>
+          </View>
+        );
+
+      case 'locusOfControlQuestion':
+        return (
+          <View key="locusOfControlQuestion" style={styles.stepContainer}>
+            <View style={styles.interactionSection}>
+              <OnboardingQuestion
                 questionText="When you achieve a major success, do you tend to credit it more to your disciplined preparation and hard work, or to being in the right place at the right time?"
-                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
               />
               <View style={styles.cardsContainer}>
                 <TouchableOpacity
@@ -244,7 +336,10 @@ export default function OnboardingScreen() {
                   onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.cardText}>Disciplined preparation and hard work</Text>
+                  <View style={styles.cardContentContainer}>
+                    <Brain size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Disciplined preparation and hard work</Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.card}
@@ -253,20 +348,34 @@ export default function OnboardingScreen() {
                   onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.cardText}>Being in the right place at the right time</Text>
+                  <View style={styles.cardContentContainer}>
+                    <Gift size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Being in the right place at the right time</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         );
 
-      case 'question3':
+      case 'transitionToMindset':
         return (
-          <View style={styles.stepContainer}>
+          <View key="transitionToMindset" style={styles.stepContainer}>
+            <View style={styles.messagesSection}>
+              <OnboardingTransitionMessage
+                message="Last one like this..."
+                onComplete={() => setTimeout(() => animateToNextStep('mindsetQuestion'), 800)}
+              />
+            </View>
+          </View>
+        );
+
+      case 'mindsetQuestion':
+        return (
+          <View key="mindsetQuestion" style={styles.stepContainer}>
             <View style={styles.interactionSection}>
-              <OnboardingQuestion 
+              <OnboardingQuestion
                 questionText="Do you feel that a person's ability to stay focused and organized is something they're mostly born with, or is it a skill that can be developed over time with the right strategies?"
-                icon={<Brain size={24} color="#94a3b8" strokeWidth={2} />}
               />
               <View style={styles.cardsContainer}>
                 <TouchableOpacity
@@ -276,7 +385,10 @@ export default function OnboardingScreen() {
                   onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.cardText}>Mostly born with it</Text>
+                  <View style={styles.cardContentContainer}>
+                    <Lock size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>Mostly born with it</Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.card}
@@ -285,28 +397,31 @@ export default function OnboardingScreen() {
                   onPressOut={handleInteractionEnd}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.cardText}>A skill that can be developed</Text>
+                  <View style={styles.cardContentContainer}>
+                    <Leaf size={24} color="#3b82f6" style={styles.cardIcon} />
+                    <Text style={styles.cardText}>A skill that can be developed</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         );
 
-      case 'transition-to-sliders':
+      case 'transitionToSliders':
         return (
-          <View style={styles.stepContainer}>
+          <View key="transitionToSliders" style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <OnboardingTransitionMessage 
+              <OnboardingTransitionMessage
                 message="Thanks for that. Now for a couple of questions on a different note. For these, just slide to the point on the scale that feels most like you."
-                onComplete={() => setTimeout(() => animateToNextStep('slider1'), 1000)}
+                onComplete={() => setTimeout(() => animateToNextStep('extraversionSlider'), 1200)}
               />
             </View>
           </View>
         );
 
-      case 'slider1':
+      case 'extraversionSlider':
         return (
-          <View style={styles.stepContainer}>
+          <View key="extraversionSlider" style={styles.stepContainer}>
             <View style={styles.interactionSection}>
               <OnboardingSliderCard
                 questionText="When it comes to tackling a big project, where do you draw your energy from?"
@@ -322,7 +437,7 @@ export default function OnboardingScreen() {
             <View style={styles.actionSection}>
               <TouchableOpacity
                 style={styles.continueButton}
-                onPress={() => handleSliderComplete('slider1')}
+                onPress={() => handleSliderComplete('extraversionSlider')}
                 onPressIn={handleInteractionStart}
                 onPressOut={handleInteractionEnd}
                 activeOpacity={0.8}
@@ -333,22 +448,22 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 'slider-transition':
+      case 'transitionToAgreeableness':
         return (
-          <View style={styles.stepContainer}>
+          <View key="transitionToAgreeableness" style={styles.stepContainer}>
             <View style={styles.messagesSection}>
-              <OnboardingTransitionMessage 
+              <OnboardingTransitionMessage
                 message="Got it. One more like that..."
                 delay={0}
-                onComplete={() => setTimeout(() => animateToNextStep('slider2'), 800)}
+                onComplete={() => setTimeout(() => animateToNextStep('agreeablenessSlider'), 800)}
               />
             </View>
           </View>
         );
 
-      case 'slider2':
+      case 'agreeablenessSlider':
         return (
-          <View style={styles.stepContainer}>
+          <View key="agreeablenessSlider" style={styles.stepContainer}>
             <View style={styles.interactionSection}>
               <OnboardingSliderCard
                 questionText="When someone gives you critical feedback on your work, what's your initial instinct?"
@@ -358,13 +473,13 @@ export default function OnboardingScreen() {
                 onValueChange={(value) => setOnboardingData(prev => ({ ...prev, agreeableness: value }))}
                 onInteractionStart={handleInteractionStart}
                 onInteractionEnd={handleInteractionEnd}
-                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />}
+                icon={<Target size={24} color="#94a3b8" strokeWidth={2} />} // Consider changing icon
               />
             </View>
             <View style={styles.actionSection}>
               <TouchableOpacity
                 style={styles.continueButton}
-                onPress={() => handleSliderComplete('slider2')}
+                onPress={() => handleSliderComplete('agreeablenessSlider')}
                 onPressIn={handleInteractionStart}
                 onPressOut={handleInteractionEnd}
                 activeOpacity={0.8}
@@ -375,13 +490,13 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 'final-question':
+      case 'finalMessagesAndInput':
         return (
-          <View style={styles.stepContainer}>
+          <View key="finalMessagesAndInput" style={styles.stepContainer}>
             <View style={styles.messagesSection}>
               <AIMessage text="Perfect. That gives me a complete picture of your unique style." />
-              <AIMessage text="Now, let's bring the focus to you." delay={1000} />
-              <AIMessage text="What's on your mind right now that feels most important?" delay={2000} />
+              <AIMessage text="Now, let's bring the focus to you." delay={1200} />
+              <AIMessage text="What's on your mind right now that feels most important?" delay={2400} />
             </View>
             <View style={styles.interactionSection}>
               <View style={styles.textInputContainer}>
@@ -615,6 +730,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
     minHeight: 80,
+    alignItems: 'center', // Center content for the new layout
+    justifyContent: 'center', // Center content for the new layout
+  },
+  cardContentContainer: { // New style for icon + text
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10, // Space between icon and text
+  },
+  cardIcon: { // New style for icon in card
+    marginRight: 0, // Reset if it was part of a global style elsewhere
   },
   cardText: {
     fontSize: 16,
