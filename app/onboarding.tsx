@@ -122,13 +122,22 @@ export default function OnboardingScreen() {
     const fetchOnboardingConfig = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/onboarding');
+        setError(null);
+        const response = await fetch('/onboarding');
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch onboarding configuration');
+          throw new Error(`Failed to fetch onboarding configuration: ${response.status} ${response.statusText}`);
         }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Expected JSON response but received: ' + contentType);
+        }
+        
         const config = await response.json();
         setOnboardingConfig(config);
       } catch (err) {
+        console.error('Error fetching onboarding config:', err);
         setError(err instanceof Error ? err.message : 'Failed to load onboarding');
       } finally {
         setIsLoading(false);
@@ -232,6 +241,13 @@ export default function OnboardingScreen() {
         });
       }, 300);
     }
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    setIsLoading(true);
+    // Re-trigger the fetch by changing a dependency
+    window.location.reload();
   };
 
   // Get appropriate aura state based on current step and interaction
@@ -470,7 +486,7 @@ export default function OnboardingScreen() {
             <Text style={styles.errorSubtext}>{error}</Text>
             <TouchableOpacity 
               style={styles.retryButton}
-              onPress={() => window.location.reload()}
+              onPress={handleRetry}
             >
               <Text style={styles.retryButtonText}>Try Again</Text>
             </TouchableOpacity>
