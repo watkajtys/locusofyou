@@ -42,9 +42,8 @@ export default function OnboardingSliderCard({
   // Shared values for animations
   const sliderWidth = useSharedValue(0);
   const thumbPosition = useSharedValue(0);
-  const thumbScale = useSharedValue(1);
+  const isInteracting = useSharedValue(false);
   const trackProgress = useSharedValue(0);
-  const glowOpacity = useSharedValue(0);
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width: newWidth } = event.nativeEvent.layout;
@@ -73,13 +72,7 @@ export default function OnboardingSliderCard({
     .enabled(!disabled)
     .onStart((event) => {
       runOnJS(onInteractionStart || (() => {}))();
-      
-      // Scale up thumb and show glow
-      thumbScale.value = withSpring(1.3, {
-        damping: 15,
-        stiffness: 300,
-      });
-      glowOpacity.value = withTiming(0.6, { duration: 150 });
+      isInteracting.value = true;
 
       // If user taps directly on track, jump to that position
       const tapX = event.x;
@@ -107,22 +100,17 @@ export default function OnboardingSliderCard({
       runOnJS(onValueChange)(newValue);
     })
     .onEnd(() => {
-      // Scale down thumb and hide glow
-      thumbScale.value = withSpring(1, {
-        damping: 15,
-        stiffness: 300,
-      });
-      glowOpacity.value = withTiming(0, { duration: 200 });
-      
+      isInteracting.value = false;
       runOnJS(onInteractionEnd || (() => {}))();
     });
 
   // Animated styles
   const thumbAnimatedStyle = useAnimatedStyle(() => {
+    const scale = isInteracting.value ? 1.2 : 1;
     return {
       transform: [
-        { translateX: thumbPosition.value - 16 }, // Center the thumb (32px width / 2)
-        { scale: thumbScale.value },
+        { translateX: thumbPosition.value - 18 }, // Center the thumb (36px width / 2)
+        { scale: withSpring(scale, { damping: 15, stiffness: 300 }) },
       ],
     };
   });
@@ -133,33 +121,18 @@ export default function OnboardingSliderCard({
     };
   });
 
-  const thumbGlowStyle = useAnimatedStyle(() => {
+  const thumbShadowStyle = useAnimatedStyle(() => {
+    const shadowOpacity = isInteracting.value ? 0.3 : 0.15;
+    const shadowRadius = isInteracting.value ? 12 : 8;
     return {
-      opacity: glowOpacity.value,
-      transform: [
-        { translateX: thumbPosition.value - 20 }, // Center the glow (40px width / 2)
-        { scale: thumbScale.value * 0.8 },
-      ],
-    };
-  });
-
-  const trackGlowStyle = useAnimatedStyle(() => {
-    const glowWidth = interpolate(
-      trackProgress.value,
-      [0, 1],
-      [0, 100],
-      Extrapolation.CLAMP
-    );
-    
-    return {
-      width: `${glowWidth}%`,
-      opacity: glowOpacity.value * 0.3,
+      shadowOpacity: withTiming(shadowOpacity, { duration: 200 }),
+      shadowRadius: withTiming(shadowRadius, { duration: 200 }),
     };
   });
 
   return (
     <View style={styles.card}>
-      {/* Optional Icon */}
+      {/* Icon */}
       {icon && (
         <View style={styles.iconContainer}>
           {icon}
@@ -176,19 +149,27 @@ export default function OnboardingSliderCard({
             {/* Track Background */}
             <View style={styles.trackBackground} />
             
-            {/* Track Glow (subtle background glow) */}
-            <Animated.View style={[styles.trackGlow, trackGlowStyle]} />
-            
             {/* Track Progress */}
             <Animated.View style={[styles.trackProgress, trackProgressAnimatedStyle]} />
             
-            {/* Thumb Glow (appears on interaction) */}
-            <Animated.View style={[styles.thumbGlow, thumbGlowStyle]} />
+            {/* Progress Markers */}
+            <View style={styles.markersContainer}>
+              {[0, 25, 50, 75, 100].map((mark) => (
+                <View 
+                  key={mark} 
+                  style={[
+                    styles.marker,
+                    { left: `${mark}%` }
+                  ]} 
+                />
+              ))}
+            </View>
             
             {/* Thumb */}
-            <Animated.View style={[styles.thumb, thumbAnimatedStyle]}>
-              <View style={styles.thumbInner} />
-              <View style={styles.thumbCore} />
+            <Animated.View style={[styles.thumb, thumbAnimatedStyle, thumbShadowStyle]}>
+              <View style={styles.thumbOuter}>
+                <View style={styles.thumbInner} />
+              </View>
             </Animated.View>
           </View>
         </GestureDetector>
@@ -226,7 +207,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 26,
     fontFamily: 'Inter-Regular',
-    color: '#1e293b', // slate-800
+    color: '#1e293b',
     textAlign: 'center',
     marginBottom: 40,
     letterSpacing: -0.2,
@@ -236,67 +217,69 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sliderWrapper: {
-    height: 80, // Increased height for easier interaction
+    height: 80,
     justifyContent: 'center',
     position: 'relative',
   },
   trackBackground: {
-    height: 8, // Slightly thicker track
-    backgroundColor: '#e2e8f0', // slate-200
+    height: 8,
+    backgroundColor: '#e2e8f0',
     borderRadius: 4,
     position: 'absolute',
     left: 0,
     right: 0,
   },
-  trackGlow: {
-    height: 8,
-    backgroundColor: '#bfdbfe', // blue-200
-    borderRadius: 4,
-    position: 'absolute',
-    left: 0,
-  },
   trackProgress: {
     height: 8,
-    backgroundColor: '#3b82f6', // blue-500
+    backgroundColor: '#3b82f6',
     borderRadius: 4,
     position: 'absolute',
     left: 0,
   },
-  thumbGlow: {
+  markersContainer: {
     position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#93c5fd', // blue-300
-    top: -16,
+    left: 0,
+    right: 0,
+    height: 8,
+    top: '50%',
+    marginTop: -4,
+  },
+  marker: {
+    position: 'absolute',
+    width: 2,
+    height: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 1,
+    marginLeft: -1,
   },
   thumb: {
     position: 'absolute',
-    width: 32,
-    height: 32,
-    top: -12,
+    width: 36,
+    height: 36,
+    top: -14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  thumbOuter: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#ffffff',
+    borderWidth: 3,
+    borderColor: '#3b82f6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   thumbInner: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    position: 'absolute',
-  },
-  thumbCore: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#3b82f6', // blue-500
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#3b82f6',
   },
   labelsContainer: {
     flexDirection: 'row',
@@ -306,7 +289,7 @@ const styles = StyleSheet.create({
   leftLabel: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#64748b', // slate-500
+    color: '#64748b',
     textAlign: 'left',
     flex: 1,
     lineHeight: 20,
@@ -314,7 +297,7 @@ const styles = StyleSheet.create({
   rightLabel: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#64748b', // slate-500
+    color: '#64748b',
     textAlign: 'right',
     flex: 1,
     lineHeight: 20,
