@@ -102,6 +102,11 @@ export default function OnboardingScreen() {
   const [interactionState, setInteractionState] = useState<InteractionState>('none');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Add transition control to prevent duplicate transitions
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     coachingStyle: coachingStyle || 'adapter',
     conscientiousness: null,
@@ -124,6 +129,15 @@ export default function OnboardingScreen() {
   const questionScale = useSharedValue(0.95);
   const continueButtonScale = useSharedValue(1);
   const submitButtonScale = useSharedValue(1);
+
+  // Cleanup function for transitions
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Fetch onboarding configuration from API
   useEffect(() => {
@@ -191,8 +205,38 @@ export default function OnboardingScreen() {
     return onboardingConfig.steps.find(step => step.id === currentStepId) || null;
   };
 
+  // Improved transition function with better control
+  const scheduleTransition = (nextStepId: string, delay: number = 0) => {
+    // Clear any existing transition timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+
+    // Prevent duplicate transitions
+    if (isTransitioning) {
+      console.log('Transition already in progress, ignoring duplicate call');
+      return;
+    }
+
+    console.log(`Scheduling transition from ${currentStepId} to ${nextStepId} in ${delay}ms`);
+
+    transitionTimeoutRef.current = setTimeout(() => {
+      animateToNextStep(nextStepId);
+    }, delay);
+  };
+
   const animateToNextStep = (nextStepId: string) => {
+    // Prevent duplicate transitions
+    if (isTransitioning) {
+      console.log('Already transitioning, ignoring call to animateToNextStep');
+      return;
+    }
+
+    console.log(`Starting transition from ${currentStepId} to ${nextStepId}`);
+    
+    setIsTransitioning(true);
     setInteractionState('transitioning');
+    
     contentOpacity.value = withTiming(0, { duration: 400, easing: Easing.in(Easing.quad) });
     contentTranslateY.value = withTiming(-20, { duration: 400, easing: Easing.in(Easing.quad) });
     contentScale.value = withTiming(0.98, { duration: 400, easing: Easing.in(Easing.quad) });
@@ -200,27 +244,35 @@ export default function OnboardingScreen() {
     setTimeout(() => {
       setCurrentStepId(nextStepId);
       setInteractionState('none');
+      setIsTransitioning(false);
+      
       contentOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
       contentTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
       contentScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+      
+      console.log(`Transition complete. Now on step: ${nextStepId}`);
     }, 400);
   };
 
   const handleCardChoice = (choice: string, field: keyof OnboardingData) => {
     const currentStep = getCurrentStep();
-    if (!currentStep) return;
+    if (!currentStep || isTransitioning) return;
 
+    console.log(`Card choice made: ${choice} for field: ${field}`);
+    
     setOnboardingData(prev => ({ ...prev, [field]: choice }));
     setInteractionState('selected');
     
     setTimeout(() => {
       if (currentStep.nextStep) {
-        animateToNextStep(currentStep.nextStep);
+        scheduleTransition(currentStep.nextStep, 300);
       }
-    }, 300);
+    }, 0);
   };
 
   const handleBackPress = () => {
+    if (isTransitioning) return;
+    
     const currentStep = getCurrentStep();
     if (!currentStep || !currentStep.previousStep) {
       // If no previous step, go back to the previous screen
@@ -233,16 +285,20 @@ export default function OnboardingScreen() {
   };
 
   const handleInteractionStart = () => {
-    setInteractionState('touching');
+    if (!isTransitioning) {
+      setInteractionState('touching');
+    }
   };
 
   const handleInteractionEnd = () => {
-    setInteractionState('none');
+    if (!isTransitioning) {
+      setInteractionState('none');
+    }
   };
 
   const handleSliderComplete = () => {
     const currentStep = getCurrentStep();
-    if (!currentStep) return;
+    if (!currentStep || isTransitioning) return;
 
     setInteractionState('selected');
     // Enhanced button press animation
@@ -253,13 +309,13 @@ export default function OnboardingScreen() {
     
     setTimeout(() => {
       if (currentStep.nextStep) {
-        animateToNextStep(currentStep.nextStep);
+        scheduleTransition(currentStep.nextStep, 500);
       }
-    }, 500);
+    }, 0);
   };
 
   const handleFinalSubmit = () => {
-    if (onboardingData.currentFocus.trim()) {
+    if (onboardingData.currentFocus.trim() && !isTransitioning) {
       setInteractionState('selected');
       // Enhanced button press animation
       submitButtonScale.value = withSequence(
@@ -281,23 +337,31 @@ export default function OnboardingScreen() {
 
   // Enhanced button press handlers
   const handleContinueButtonPressIn = () => {
-    handleInteractionStart();
-    continueButtonScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    if (!isTransitioning) {
+      handleInteractionStart();
+      continueButtonScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    }
   };
 
   const handleContinueButtonPressOut = () => {
-    handleInteractionEnd();
-    continueButtonScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    if (!isTransitioning) {
+      handleInteractionEnd();
+      continueButtonScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    }
   };
 
   const handleSubmitButtonPressIn = () => {
-    handleInteractionStart();
-    submitButtonScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    if (!isTransitioning) {
+      handleInteractionStart();
+      submitButtonScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+    }
   };
 
   const handleSubmitButtonPressOut = () => {
-    handleInteractionEnd();
-    submitButtonScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    if (!isTransitioning) {
+      handleInteractionEnd();
+      submitButtonScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+    }
   };
 
   // Get appropriate aura state based on current step and interaction
@@ -328,6 +392,36 @@ export default function OnboardingScreen() {
     }
   };
 
+  // Improved message completion handler
+  const handleMessageSequenceComplete = (stepId: string) => {
+    const currentStep = getCurrentStep();
+    if (!currentStep || currentStep.id !== stepId || isTransitioning) {
+      console.log('Message completion ignored - step mismatch or transitioning');
+      return;
+    }
+
+    console.log(`Message sequence complete for step: ${stepId}`);
+    
+    if (currentStep.nextStep) {
+      scheduleTransition(currentStep.nextStep, 1000);
+    }
+  };
+
+  // Improved transition message completion handler  
+  const handleTransitionMessageComplete = (stepId: string) => {
+    const currentStep = getCurrentStep();
+    if (!currentStep || currentStep.id !== stepId || isTransitioning) {
+      console.log('Transition message completion ignored - step mismatch or transitioning');
+      return;
+    }
+
+    console.log(`Transition message complete for step: ${stepId}`);
+    
+    if (currentStep.nextStep) {
+      scheduleTransition(currentStep.nextStep, 800);
+    }
+  };
+
   const renderStepContent = () => {
     const currentStep = getCurrentStep();
     if (!currentStep) return null;
@@ -339,11 +433,11 @@ export default function OnboardingScreen() {
             <View style={styles.messagesSection}>
               {currentStep.messages?.map((msg, index) => (
                 <AIMessage 
-                  key={index}
+                  key={`${currentStep.id}-msg-${index}`}
                   text={msg.text} 
                   delay={msg.delay}
-                  onComplete={index === currentStep.messages!.length - 1 && currentStep.nextStep ? 
-                    () => setTimeout(() => animateToNextStep(currentStep.nextStep!), 1000) : 
+                  onComplete={index === currentStep.messages!.length - 1 ? 
+                    () => handleMessageSequenceComplete(currentStep.id) : 
                     undefined
                   }
                 />
@@ -379,6 +473,7 @@ export default function OnboardingScreen() {
                       onPressIn={handleInteractionStart}
                       onPressOut={handleInteractionEnd}
                       activeOpacity={0.8}
+                      disabled={isTransitioning}
                     >
                       <View style={styles.cardContentContainer}>
                         <IconComponent size={24} color="#3b82f6" style={styles.cardIcon} />
@@ -397,12 +492,9 @@ export default function OnboardingScreen() {
           <View style={styles.stepContainer}>
             <View style={styles.messagesSection}>
               <OnboardingTransitionMessage
+                key={currentStep.id} // Force re-render with step id
                 message={currentStep.message || ''}
-                onComplete={() => setTimeout(() => {
-                  if (currentStep.nextStep) {
-                    animateToNextStep(currentStep.nextStep);
-                  }
-                }, 1000)}
+                onComplete={() => handleTransitionMessageComplete(currentStep.id)}
               />
             </View>
           </View>
@@ -434,6 +526,7 @@ export default function OnboardingScreen() {
                   }))}
                   onInteractionStart={handleInteractionStart}
                   onInteractionEnd={handleInteractionEnd}
+                  disabled={isTransitioning}
                   icon={IconComponent ? <IconComponent size={24} color="#94a3b8" strokeWidth={2} /> : undefined}
                 />
               </Animated.View>
@@ -449,6 +542,7 @@ export default function OnboardingScreen() {
                   onPressIn={handleContinueButtonPressIn}
                   onPressOut={handleContinueButtonPressOut}
                   activeOpacity={0.9}
+                  disabled={isTransitioning}
                 >
                   <Text style={styles.continueButtonText}>Continue</Text>
                 </TouchableOpacity>
@@ -463,7 +557,7 @@ export default function OnboardingScreen() {
             <View style={styles.messagesSection}>
               {currentStep.messages?.map((msg, index) => (
                 <AIMessage 
-                  key={index}
+                  key={`${currentStep.id}-msg-${index}`}
                   text={msg.text} 
                   delay={msg.delay}
                 />
@@ -482,6 +576,7 @@ export default function OnboardingScreen() {
                   multiline
                   numberOfLines={4}
                   maxLength={500}
+                  editable={!isTransitioning}
                 />
               </View>
             </View>
@@ -498,7 +593,7 @@ export default function OnboardingScreen() {
                   onPress={handleFinalSubmit}
                   onPressIn={handleSubmitButtonPressIn}
                   onPressOut={handleSubmitButtonPressOut}
-                  disabled={!onboardingData.currentFocus.trim()}
+                  disabled={!onboardingData.currentFocus.trim() || isTransitioning}
                   activeOpacity={0.9}
                 >
                   <Text style={[
@@ -609,6 +704,7 @@ export default function OnboardingScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!isTransitioning}
         >
           {showContent && (
             <Animated.View style={[styles.content, contentAnimatedStyle]}>
@@ -632,12 +728,13 @@ const AIMessage = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showMessage, setShowMessage] = useState(false);
+  const [hasCompleted, setHasCompleted] = useState(false);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
   const scale = useSharedValue(0.95);
 
   useEffect(() => {
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       setShowMessage(true);
       opacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
       translateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
@@ -645,10 +742,15 @@ const AIMessage = ({
 
       setTimeout(() => {
         setIsLoading(false);
-        onComplete?.();
+        if (!hasCompleted && onComplete) {
+          setHasCompleted(true);
+          onComplete();
+        }
       }, 1200);
     }, delay);
-  }, []);
+
+    return () => clearTimeout(timeout);
+  }, [delay, onComplete, hasCompleted]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

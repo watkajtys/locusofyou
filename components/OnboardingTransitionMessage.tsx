@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -20,8 +20,9 @@ export default function OnboardingTransitionMessage({
   delay = 0,
   onComplete
 }: OnboardingTransitionMessageProps) {
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [showMessage, setShowMessage] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showMessage, setShowMessage] = useState(false);
+  const [hasCompleted, setHasCompleted] = useState(false);
   
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
@@ -29,7 +30,12 @@ export default function OnboardingTransitionMessage({
   const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
-    setTimeout(() => {
+    // Reset state when message changes
+    setIsLoading(true);
+    setShowMessage(false);
+    setHasCompleted(false);
+    
+    const timeout = setTimeout(() => {
       setShowMessage(true);
       
       // Enhanced animate container in
@@ -55,10 +61,17 @@ export default function OnboardingTransitionMessage({
       // Show typing indicator for a moment, then reveal message
       setTimeout(() => {
         setIsLoading(false);
-        onComplete?.();
+        
+        // Only call onComplete once
+        if (!hasCompleted && onComplete) {
+          setHasCompleted(true);
+          onComplete();
+        }
       }, 1500);
     }, delay);
-  }, [delay, onComplete]);
+
+    return () => clearTimeout(timeout);
+  }, [message, delay]); // Re-run when message changes
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
