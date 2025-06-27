@@ -123,7 +123,7 @@ export default function OnboardingScreen() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch('/onboarding');
+        const response = await fetch('/api/onboarding');
         
         if (!response.ok) {
           throw new Error(`Failed to fetch onboarding configuration: ${response.status} ${response.statusText}`);
