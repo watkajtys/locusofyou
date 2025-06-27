@@ -18,6 +18,7 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
+  withSpring,
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -112,10 +113,17 @@ export default function OnboardingScreen() {
     currentFocus: '',
   });
 
-  // Animation values
+  // Enhanced animation values
   const contentOpacity = useSharedValue(0);
   const contentTranslateY = useSharedValue(30);
+  const contentScale = useSharedValue(0.95);
   const backgroundScale = useSharedValue(1);
+  const backgroundRotation = useSharedValue(0);
+  const questionOpacity = useSharedValue(0);
+  const questionTranslateY = useSharedValue(20);
+  const questionScale = useSharedValue(0.95);
+  const continueButtonScale = useSharedValue(1);
+  const submitButtonScale = useSharedValue(1);
 
   // Fetch onboarding configuration from API
   useEffect(() => {
@@ -140,20 +148,43 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     if (onboardingConfig && !isLoading) {
-      // Start background animation
+      // Enhanced background animation
       backgroundScale.value = withSequence(
         withTiming(1.02, { duration: 8000, easing: Easing.inOut(Easing.sin) }),
         withTiming(1, { duration: 8000, easing: Easing.inOut(Easing.sin) })
       );
 
-      // Show initial content
+      backgroundRotation.value = withTiming(360, { 
+        duration: 120000, 
+        easing: Easing.linear 
+      });
+
+      // Show initial content with enhanced animation
       setTimeout(() => {
         setShowContent(true);
-        contentOpacity.value = withTiming(1, { duration: 800 });
-        contentTranslateY.value = withTiming(0, { duration: 800 });
+        contentOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
+        contentTranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
+        contentScale.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
       }, 500);
     }
   }, [onboardingConfig, isLoading]);
+
+  // Trigger question animation when step changes
+  useEffect(() => {
+    const currentStep = getCurrentStep();
+    if (currentStep?.type === 'cardChoice' || currentStep?.type === 'slider') {
+      // Reset and animate question
+      questionOpacity.value = 0;
+      questionTranslateY.value = 20;
+      questionScale.value = 0.95;
+      
+      setTimeout(() => {
+        questionOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+        questionTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+        questionScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+      }, 200);
+    }
+  }, [currentStepId]);
 
   const getCurrentStep = (): OnboardingStep | null => {
     if (!onboardingConfig) return null;
@@ -162,14 +193,16 @@ export default function OnboardingScreen() {
 
   const animateToNextStep = (nextStepId: string) => {
     setInteractionState('transitioning');
-    contentOpacity.value = withTiming(0, { duration: 400 });
-    contentTranslateY.value = withTiming(-20, { duration: 400 });
+    contentOpacity.value = withTiming(0, { duration: 400, easing: Easing.in(Easing.quad) });
+    contentTranslateY.value = withTiming(-20, { duration: 400, easing: Easing.in(Easing.quad) });
+    contentScale.value = withTiming(0.98, { duration: 400, easing: Easing.in(Easing.quad) });
     
     setTimeout(() => {
       setCurrentStepId(nextStepId);
       setInteractionState('none');
-      contentOpacity.value = withTiming(1, { duration: 600 });
-      contentTranslateY.value = withTiming(0, { duration: 600 });
+      contentOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+      contentTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+      contentScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
     }, 400);
   };
 
@@ -212,6 +245,12 @@ export default function OnboardingScreen() {
     if (!currentStep) return;
 
     setInteractionState('selected');
+    // Enhanced button press animation
+    continueButtonScale.value = withSequence(
+      withSpring(0.95, { damping: 15, stiffness: 300 }),
+      withSpring(1, { damping: 15, stiffness: 300 })
+    );
+    
     setTimeout(() => {
       if (currentStep.nextStep) {
         animateToNextStep(currentStep.nextStep);
@@ -222,6 +261,12 @@ export default function OnboardingScreen() {
   const handleFinalSubmit = () => {
     if (onboardingData.currentFocus.trim()) {
       setInteractionState('selected');
+      // Enhanced button press animation
+      submitButtonScale.value = withSequence(
+        withSpring(0.95, { damping: 15, stiffness: 300 }),
+        withSpring(1, { damping: 15, stiffness: 300 })
+      );
+      
       setTimeout(() => {
         router.push({
           pathname: '/chat',
@@ -232,6 +277,27 @@ export default function OnboardingScreen() {
         });
       }, 300);
     }
+  };
+
+  // Enhanced button press handlers
+  const handleContinueButtonPressIn = () => {
+    handleInteractionStart();
+    continueButtonScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+  };
+
+  const handleContinueButtonPressOut = () => {
+    handleInteractionEnd();
+    continueButtonScale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
+  const handleSubmitButtonPressIn = () => {
+    handleInteractionStart();
+    submitButtonScale.value = withSpring(0.98, { damping: 15, stiffness: 300 });
+  };
+
+  const handleSubmitButtonPressOut = () => {
+    handleInteractionEnd();
+    submitButtonScale.value = withSpring(1, { damping: 15, stiffness: 300 });
   };
 
   // Get appropriate aura state based on current step and interaction
@@ -290,7 +356,18 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.interactionSection}>
-              <OnboardingQuestion questionText={currentStep.question || ''} />
+              <Animated.View style={[
+                styles.questionWrapper,
+                {
+                  opacity: questionOpacity,
+                  transform: [
+                    { translateY: questionTranslateY },
+                    { scale: questionScale }
+                  ]
+                }
+              ]}>
+                <OnboardingQuestion questionText={currentStep.question || ''} />
+              </Animated.View>
               <View style={styles.cardsContainer}>
                 {currentStep.choices?.map((choice) => {
                   const IconComponent = getIconComponent(choice.icon);
@@ -336,30 +413,46 @@ export default function OnboardingScreen() {
         return (
           <View style={styles.stepContainer}>
             <View style={styles.interactionSection}>
-              <OnboardingSliderCard
-                questionText={currentStep.question || ''}
-                leftLabel={currentStep.leftLabel || ''}
-                rightLabel={currentStep.rightLabel || ''}
-                value={onboardingData[currentStep.field as keyof OnboardingData] as number}
-                onValueChange={(value) => setOnboardingData(prev => ({ 
-                  ...prev, 
-                  [currentStep.field!]: value 
-                }))}
-                onInteractionStart={handleInteractionStart}
-                onInteractionEnd={handleInteractionEnd}
-                icon={IconComponent ? <IconComponent size={24} color="#94a3b8" strokeWidth={2} /> : undefined}
-              />
+              <Animated.View style={[
+                styles.questionWrapper,
+                {
+                  opacity: questionOpacity,
+                  transform: [
+                    { translateY: questionTranslateY },
+                    { scale: questionScale }
+                  ]
+                }
+              ]}>
+                <OnboardingSliderCard
+                  questionText={currentStep.question || ''}
+                  leftLabel={currentStep.leftLabel || ''}
+                  rightLabel={currentStep.rightLabel || ''}
+                  value={onboardingData[currentStep.field as keyof OnboardingData] as number}
+                  onValueChange={(value) => setOnboardingData(prev => ({ 
+                    ...prev, 
+                    [currentStep.field!]: value 
+                  }))}
+                  onInteractionStart={handleInteractionStart}
+                  onInteractionEnd={handleInteractionEnd}
+                  icon={IconComponent ? <IconComponent size={24} color="#94a3b8" strokeWidth={2} /> : undefined}
+                />
+              </Animated.View>
             </View>
             <View style={styles.actionSection}>
-              <TouchableOpacity
-                style={styles.continueButton}
-                onPress={handleSliderComplete}
-                onPressIn={handleInteractionStart}
-                onPressOut={handleInteractionEnd}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.continueButtonText}>Continue</Text>
-              </TouchableOpacity>
+              <Animated.View style={[
+                styles.buttonWrapper,
+                { transform: [{ scale: continueButtonScale }] }
+              ]}>
+                <TouchableOpacity
+                  style={styles.continueButton}
+                  onPress={handleSliderComplete}
+                  onPressIn={handleContinueButtonPressIn}
+                  onPressOut={handleContinueButtonPressOut}
+                  activeOpacity={0.9}
+                >
+                  <Text style={styles.continueButtonText}>Continue</Text>
+                </TouchableOpacity>
+              </Animated.View>
             </View>
           </View>
         );
@@ -393,25 +486,30 @@ export default function OnboardingScreen() {
               </View>
             </View>
             <View style={styles.actionSection}>
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  onboardingData.currentFocus.trim() ? styles.submitButtonActive : styles.submitButtonInactive
-                ]}
-                onPress={handleFinalSubmit}
-                onPressIn={handleInteractionStart}
-                onPressOut={handleInteractionEnd}
-                disabled={!onboardingData.currentFocus.trim()}
-                activeOpacity={0.8}
-              >
-                <Text style={[
-                  styles.submitButtonText,
-                  onboardingData.currentFocus.trim() ? styles.submitButtonTextActive : styles.submitButtonTextInactive
-                ]}>
-                  {currentStep.submitButtonText || 'Begin Coaching'}
-                </Text>
-                <ArrowRight size={20} color={onboardingData.currentFocus.trim() ? '#ffffff' : '#94a3b8'} />
-              </TouchableOpacity>
+              <Animated.View style={[
+                styles.buttonWrapper,
+                { transform: [{ scale: submitButtonScale }] }
+              ]}>
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    onboardingData.currentFocus.trim() ? styles.submitButtonActive : styles.submitButtonInactive
+                  ]}
+                  onPress={handleFinalSubmit}
+                  onPressIn={handleSubmitButtonPressIn}
+                  onPressOut={handleSubmitButtonPressOut}
+                  disabled={!onboardingData.currentFocus.trim()}
+                  activeOpacity={0.9}
+                >
+                  <Text style={[
+                    styles.submitButtonText,
+                    onboardingData.currentFocus.trim() ? styles.submitButtonTextActive : styles.submitButtonTextInactive
+                  ]}>
+                    {currentStep.submitButtonText || 'Begin Coaching'}
+                  </Text>
+                  <ArrowRight size={20} color={onboardingData.currentFocus.trim() ? '#ffffff' : '#94a3b8'} />
+                </TouchableOpacity>
+              </Animated.View>
             </View>
           </View>
         );
@@ -421,13 +519,20 @@ export default function OnboardingScreen() {
     }
   };
 
+  // Enhanced animated styles
   const backgroundAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: backgroundScale.value }],
+    transform: [
+      { scale: backgroundScale.value },
+      { rotate: `${backgroundRotation.value}deg` }
+    ],
   }));
 
   const contentAnimatedStyle = useAnimatedStyle(() => ({
     opacity: contentOpacity.value,
-    transform: [{ translateY: contentTranslateY.value }],
+    transform: [
+      { translateY: contentTranslateY.value },
+      { scale: contentScale.value }
+    ],
   }));
 
   // Show loading state
@@ -482,7 +587,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Animated Background */}
+      {/* Enhanced Animated Background */}
       <Animated.View style={[styles.backgroundContainer, backgroundAnimatedStyle]}>
         <LinearGradient
           colors={['#e0f2fe', '#dbeafe', '#f0f9ff']}
@@ -529,12 +634,14 @@ const AIMessage = ({
   const [showMessage, setShowMessage] = useState(false);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
+  const scale = useSharedValue(0.95);
 
   useEffect(() => {
     setTimeout(() => {
       setShowMessage(true);
-      opacity.value = withTiming(1, { duration: 600 });
-      translateY.value = withTiming(0, { duration: 600 });
+      opacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+      translateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+      scale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
 
       setTimeout(() => {
         setIsLoading(false);
@@ -545,7 +652,10 @@ const AIMessage = ({
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value }
+    ],
   }));
 
   if (!showMessage) return null;
@@ -610,6 +720,12 @@ const styles = StyleSheet.create({
     minHeight: 80,
     justifyContent: 'flex-end',
     paddingBottom: 20,
+  },
+  questionWrapper: {
+    width: '100%',
+  },
+  buttonWrapper: {
+    alignSelf: 'center',
   },
   aiMessageContainer: {
     alignItems: 'flex-start',
@@ -678,7 +794,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 24,
-    alignSelf: 'center',
     shadowColor: '#3b82f6',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -726,7 +841,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 4,
-    alignSelf: 'center',
     minWidth: 180,
   },
   submitButtonActive: {

@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   withSequence,
   withDelay,
+  withRepeat,
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,32 +25,90 @@ export default function WelcomeScreen() {
   const [isSecondBubbleLoading, setIsSecondBubbleLoading] = useState(true);
   const [isThirdBubbleLoading, setIsThirdBubbleLoading] = useState(true);
 
-  // Animation values
+  // Enhanced animation values
   const backgroundScale = useSharedValue(1);
   const backgroundRotation = useSharedValue(0);
+  const gradientStartX = useSharedValue(0);
+  const gradientStartY = useSharedValue(0);
+  const gradientEndX = useSharedValue(1);
+  const gradientEndY = useSharedValue(1);
   const avatarOpacity = useSharedValue(0);
   const avatarScale = useSharedValue(0.8);
   const firstBubbleOpacity = useSharedValue(0);
   const firstBubbleTranslateY = useSharedValue(20);
+  const firstBubbleScale = useSharedValue(0.95);
   const secondBubbleOpacity = useSharedValue(0);
   const secondBubbleTranslateY = useSharedValue(20);
+  const secondBubbleScale = useSharedValue(0.95);
   const thirdBubbleOpacity = useSharedValue(0);
   const thirdBubbleTranslateY = useSharedValue(20);
+  const thirdBubbleScale = useSharedValue(0.95);
   const pillarsOpacity = useSharedValue(0);
+  const pillarsTranslateY = useSharedValue(20);
   const cardsOpacity = useSharedValue(0);
   const cardsTranslateY = useSharedValue(30);
+  const cardsScale = useSharedValue(0.95);
 
   useEffect(() => {
-    // Start breathing background animation
-    backgroundScale.value = withSequence(
-      withTiming(1.02, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
-      withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) })
+    // Enhanced breathing background animation
+    backgroundScale.value = withRepeat(
+      withSequence(
+        withTiming(1.02, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
     );
 
-    backgroundRotation.value = withTiming(360, { 
-      duration: 60000, 
-      easing: Easing.linear 
-    });
+    backgroundRotation.value = withRepeat(
+      withTiming(360, { 
+        duration: 60000, 
+        easing: Easing.linear 
+      }),
+      -1,
+      false
+    );
+
+    // Enhanced gradient animation
+    gradientStartX.value = withRepeat(
+      withSequence(
+        withTiming(0.2, { duration: 15000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(-0.1, { duration: 15000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 15000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+
+    gradientStartY.value = withRepeat(
+      withSequence(
+        withTiming(-0.1, { duration: 12000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.2, { duration: 12000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 12000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+
+    gradientEndX.value = withRepeat(
+      withSequence(
+        withTiming(1.1, { duration: 18000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.9, { duration: 18000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 18000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
+
+    gradientEndY.value = withRepeat(
+      withSequence(
+        withTiming(0.8, { duration: 14000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1.2, { duration: 14000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 14000, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      false
+    );
 
     // Start the animation sequence
     setTimeout(() => {
@@ -57,29 +116,33 @@ export default function WelcomeScreen() {
       avatarOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
       avatarScale.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
 
-      // First bubble
+      // Enhanced first bubble animation
       setTimeout(() => {
-        firstBubbleOpacity.value = withTiming(1, { duration: 400 });
-        firstBubbleTranslateY.value = withTiming(0, { duration: 400 });
+        firstBubbleOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+        firstBubbleTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+        firstBubbleScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
         setTimeout(() => {
           setIsFirstBubbleLoading(false);
         }, 600);
 
-        // Second bubble
+        // Enhanced second bubble animation
         setTimeout(() => {
-          secondBubbleOpacity.value = withTiming(1, { duration: 400 });
-          secondBubbleTranslateY.value = withTiming(0, { duration: 400 });
+          secondBubbleOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+          secondBubbleTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+          secondBubbleScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
           setTimeout(() => {
             setIsSecondBubbleLoading(false);
           }, 700);
 
-          // Trust pillars
+          // Enhanced trust pillars animation
           pillarsOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
+          pillarsTranslateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
 
-          // Third bubble and cards
+          // Enhanced third bubble and cards
           setTimeout(() => {
-            thirdBubbleOpacity.value = withTiming(1, { duration: 400 });
-            thirdBubbleTranslateY.value = withTiming(0, { duration: 400 });
+            thirdBubbleOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
+            thirdBubbleTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+            thirdBubbleScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
             setTimeout(() => {
               setIsThirdBubbleLoading(false);
             }, 600);
@@ -87,6 +150,7 @@ export default function WelcomeScreen() {
             setTimeout(() => {
               cardsOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
               cardsTranslateY.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
+              cardsScale.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
             }, 300);
           }, 800 + 700);
         }, 800 + 600);
@@ -135,12 +199,16 @@ export default function WelcomeScreen() {
     }
   };
 
-  // Animated styles
+  // Enhanced animated styles
   const backgroundAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: backgroundScale.value },
       { rotate: `${backgroundRotation.value}deg` }
     ],
+  }));
+
+  const gradientAnimatedStyle = useAnimatedStyle(() => ({
+    flex: 1,
   }));
 
   const avatarAnimatedStyle = useAnimatedStyle(() => ({
@@ -150,38 +218,59 @@ export default function WelcomeScreen() {
 
   const firstBubbleAnimatedStyle = useAnimatedStyle(() => ({
     opacity: firstBubbleOpacity.value,
-    transform: [{ translateY: firstBubbleTranslateY.value }],
+    transform: [
+      { translateY: firstBubbleTranslateY.value },
+      { scale: firstBubbleScale.value }
+    ],
   }));
 
   const secondBubbleAnimatedStyle = useAnimatedStyle(() => ({
     opacity: secondBubbleOpacity.value,
-    transform: [{ translateY: secondBubbleTranslateY.value }],
+    transform: [
+      { translateY: secondBubbleTranslateY.value },
+      { scale: secondBubbleScale.value }
+    ],
   }));
 
   const thirdBubbleAnimatedStyle = useAnimatedStyle(() => ({
     opacity: thirdBubbleOpacity.value,
-    transform: [{ translateY: thirdBubbleTranslateY.value }],
+    transform: [
+      { translateY: thirdBubbleTranslateY.value },
+      { scale: thirdBubbleScale.value }
+    ],
   }));
 
   const pillarsAnimatedStyle = useAnimatedStyle(() => ({
     opacity: pillarsOpacity.value,
+    transform: [{ translateY: pillarsTranslateY.value }],
   }));
 
   const cardsAnimatedStyle = useAnimatedStyle(() => ({
     opacity: cardsOpacity.value,
-    transform: [{ translateY: cardsTranslateY.value }],
+    transform: [
+      { translateY: cardsTranslateY.value },
+      { scale: cardsScale.value }
+    ],
   }));
 
   return (
     <View style={styles.container}>
-      {/* Animated Background */}
+      {/* Enhanced Animated Background */}
       <Animated.View style={[styles.backgroundContainer, backgroundAnimatedStyle]}>
-        <LinearGradient
-          colors={['#e0f2fe', '#dbeafe', '#f0f9ff']}
-          style={styles.backgroundGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
+        <Animated.View style={gradientAnimatedStyle}>
+          <LinearGradient
+            colors={['#e0f2fe', '#dbeafe', '#f0f9ff']}
+            style={styles.backgroundGradient}
+            start={{ 
+              x: gradientStartX.value, 
+              y: gradientStartY.value 
+            }}
+            end={{ 
+              x: gradientEndX.value, 
+              y: gradientEndY.value 
+            }}
+          />
+        </Animated.View>
       </Animated.View>
 
       <SafeAreaView style={styles.safeArea}>
@@ -212,7 +301,10 @@ export default function WelcomeScreen() {
             <View style={styles.chatSection}>
               <View style={styles.chatContainer}>
                 <Animated.View style={[styles.chatBubbleContainer, firstBubbleAnimatedStyle]}>
-                  <View style={styles.chatBubble}>
+                  <View style={[
+                    styles.chatBubble,
+                    selectedCard && styles.chatBubbleSelected
+                  ]}>
                     {isFirstBubbleLoading ? (
                       <TypingIndicator isVisible={true} showBubble={false} />
                     ) : (
@@ -222,7 +314,10 @@ export default function WelcomeScreen() {
                 </Animated.View>
 
                 <Animated.View style={[styles.chatBubbleContainer, secondBubbleAnimatedStyle]}>
-                  <View style={styles.chatBubble}>
+                  <View style={[
+                    styles.chatBubble,
+                    selectedCard && styles.chatBubbleSelected
+                  ]}>
                     {isSecondBubbleLoading ? (
                       <TypingIndicator isVisible={true} showBubble={false} />
                     ) : (
@@ -232,7 +327,10 @@ export default function WelcomeScreen() {
                 </Animated.View>
 
                 <Animated.View style={[styles.chatBubbleContainer, thirdBubbleAnimatedStyle]}>
-                  <View style={styles.chatBubble}>
+                  <View style={[
+                    styles.chatBubble,
+                    selectedCard && styles.chatBubbleSelected
+                  ]}>
                     {isThirdBubbleLoading ? (
                       <TypingIndicator isVisible={true} showBubble={false} />
                     ) : (
@@ -242,7 +340,7 @@ export default function WelcomeScreen() {
                 </Animated.View>
               </View>
 
-              {/* Trust Pillars */}
+              {/* Enhanced Trust Pillars */}
               <Animated.View style={[styles.trustPillarsContainer, pillarsAnimatedStyle]}>
                 <View style={styles.pillar}>
                   <View style={styles.pillarIconContainer}>
@@ -264,7 +362,7 @@ export default function WelcomeScreen() {
                 </View>
               </Animated.View>
 
-              {/* Interactive Cards */}
+              {/* Enhanced Interactive Cards */}
               <Animated.View style={[styles.cardsContainer, cardsAnimatedStyle]}>
                 <TouchableOpacity
                   style={[
@@ -277,13 +375,23 @@ export default function WelcomeScreen() {
                   activeOpacity={0.8}
                   disabled={selectedCard !== null}
                 >
-                  {/* Animated border overlay */}
+                  {/* Enhanced animated border overlay */}
                   {selectedCard === 'planner' && (
-                    <View style={styles.cardBorderOverlay} />
+                    <Animated.View style={[
+                      styles.cardBorderOverlay,
+                      {
+                        shadowOpacity: 0.3,
+                        shadowRadius: 20,
+                        elevation: 12,
+                      }
+                    ]} />
                   )}
                   
                   <View style={styles.cardContent}>
-                    <View style={styles.cardIconContainer}>
+                    <View style={[
+                      styles.cardIconContainer,
+                      selectedCard === 'planner' && styles.selectedCardIconContainer
+                    ]}>
                       <Compass 
                         size={24} 
                         color={selectedCard === 'planner' ? '#3b82f6' : '#64748b'} 
@@ -316,13 +424,23 @@ export default function WelcomeScreen() {
                   activeOpacity={0.8}
                   disabled={selectedCard !== null}
                 >
-                  {/* Animated border overlay */}
+                  {/* Enhanced animated border overlay */}
                   {selectedCard === 'adapter' && (
-                    <View style={styles.cardBorderOverlay} />
+                    <Animated.View style={[
+                      styles.cardBorderOverlay,
+                      {
+                        shadowOpacity: 0.3,
+                        shadowRadius: 20,
+                        elevation: 12,
+                      }
+                    ]} />
                   )}
                   
                   <View style={styles.cardContent}>
-                    <View style={styles.cardIconContainer}>
+                    <View style={[
+                      styles.cardIconContainer,
+                      selectedCard === 'adapter' && styles.selectedCardIconContainer
+                    ]}>
                       <Target 
                         size={24} 
                         color={selectedCard === 'adapter' ? '#3b82f6' : '#64748b'} 
@@ -438,6 +556,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 6,
+    transition: 'all 0.3s ease',
+  },
+  chatBubbleSelected: {
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   },
   chatText: {
     fontSize: 16,
@@ -498,6 +622,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fefefe',
     borderColor: '#3b82f6',
     transform: [{ scale: 0.98 }],
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 16,
   },
   cardBorderOverlay: {
     position: 'absolute',
@@ -508,6 +635,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 2,
     borderColor: '#3b82f6',
+    shadowColor: '#3b82f6',
   },
   cardContent: {
     alignItems: 'center',
@@ -521,6 +649,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+  },
+  selectedCardIconContainer: {
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
   },
   cardText: {
     fontSize: 18,

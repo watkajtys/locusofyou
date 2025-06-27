@@ -4,6 +4,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSequence,
   Easing,
 } from 'react-native-reanimated';
 import TypingIndicator from './TypingIndicator';
@@ -25,12 +26,13 @@ export default function OnboardingTransitionMessage({
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(20);
   const scale = useSharedValue(0.95);
+  const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
     setTimeout(() => {
       setShowMessage(true);
       
-      // Animate container in
+      // Enhanced animate container in
       opacity.value = withTiming(1, { 
         duration: 600, 
         easing: Easing.out(Easing.cubic) 
@@ -43,6 +45,12 @@ export default function OnboardingTransitionMessage({
         duration: 600, 
         easing: Easing.out(Easing.cubic) 
       });
+
+      // Subtle glow effect
+      glowOpacity.value = withSequence(
+        withTiming(0.3, { duration: 800, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 1000, easing: Easing.out(Easing.quad) })
+      );
 
       // Show typing indicator for a moment, then reveal message
       setTimeout(() => {
@@ -60,10 +68,17 @@ export default function OnboardingTransitionMessage({
     ],
   }));
 
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
   if (!showMessage) return null;
 
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
+      {/* Subtle glow overlay */}
+      <Animated.View style={[styles.glowOverlay, glowStyle]} />
+      
       <View style={styles.bubble}>
         {isLoading ? (
           <TypingIndicator isVisible={true} showBubble={false} />
@@ -80,6 +95,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 24,
     width: '100%',
+    position: 'relative',
+  },
+  glowOverlay: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    backgroundColor: '#bfdbfe',
+    borderRadius: 22,
+    zIndex: -1,
   },
   bubble: {
     backgroundColor: '#ffffff',

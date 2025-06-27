@@ -13,6 +13,7 @@ import Animated, {
   withTiming,
   runOnJS,
   interpolate,
+  withSequence,
   Extrapolation,
 } from 'react-native-reanimated';
 
@@ -39,12 +40,15 @@ export default function OnboardingSliderCard({
   disabled = false,
   icon
 }: OnboardingSliderCardProps) {
-  // Shared values for animations
+  // Enhanced shared values for animations
   const sliderWidth = useSharedValue(0);
   const thumbPosition = useSharedValue(0);
   const thumbScale = useSharedValue(1);
   const trackProgress = useSharedValue(0);
   const glowOpacity = useSharedValue(0);
+  const glowScale = useSharedValue(1);
+  const trackGlowOpacity = useSharedValue(0);
+  const pulseScale = useSharedValue(1);
 
   const handleLayout = (event: LayoutChangeEvent) => {
     const { width: newWidth } = event.nativeEvent.layout;
@@ -68,18 +72,29 @@ export default function OnboardingSliderCard({
     }
   }, [value]);
 
-  // Gesture handler
+  // Enhanced gesture handler
   const panGesture = Gesture.Pan()
     .enabled(!disabled)
     .onStart((event) => {
       runOnJS(onInteractionStart || (() => {}))();
       
-      // Scale up thumb and show glow
-      thumbScale.value = withSpring(1.3, {
+      // Enhanced thumb and glow animations
+      thumbScale.value = withSpring(1.4, {
         damping: 15,
         stiffness: 300,
       });
-      glowOpacity.value = withTiming(0.6, { duration: 150 });
+      glowOpacity.value = withTiming(0.8, { duration: 150 });
+      glowScale.value = withSpring(1.2, {
+        damping: 15,
+        stiffness: 300,
+      });
+      trackGlowOpacity.value = withTiming(0.4, { duration: 150 });
+
+      // Add subtle pulse effect
+      pulseScale.value = withSequence(
+        withTiming(1.05, { duration: 100 }),
+        withTiming(1, { duration: 200 })
+      );
 
       // If user taps directly on track, jump to that position
       const tapX = event.x;
@@ -107,17 +122,22 @@ export default function OnboardingSliderCard({
       runOnJS(onValueChange)(newValue);
     })
     .onEnd(() => {
-      // Scale down thumb and hide glow
+      // Enhanced end animations
       thumbScale.value = withSpring(1, {
         damping: 15,
         stiffness: 300,
       });
-      glowOpacity.value = withTiming(0, { duration: 200 });
+      glowOpacity.value = withTiming(0, { duration: 300 });
+      glowScale.value = withSpring(1, {
+        damping: 15,
+        stiffness: 300,
+      });
+      trackGlowOpacity.value = withTiming(0, { duration: 300 });
       
       runOnJS(onInteractionEnd || (() => {}))();
     });
 
-  // Animated styles
+  // Enhanced animated styles
   const thumbAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -137,8 +157,8 @@ export default function OnboardingSliderCard({
     return {
       opacity: glowOpacity.value,
       transform: [
-        { translateX: thumbPosition.value - 20 }, // Center the glow (40px width / 2)
-        { scale: thumbScale.value * 0.8 },
+        { translateX: thumbPosition.value - 24 }, // Center the glow (48px width / 2)
+        { scale: glowScale.value },
       ],
     };
   });
@@ -153,12 +173,18 @@ export default function OnboardingSliderCard({
     
     return {
       width: `${glowWidth}%`,
-      opacity: glowOpacity.value * 0.3,
+      opacity: trackGlowOpacity.value,
+    };
+  });
+
+  const cardAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: pulseScale.value }],
     };
   });
 
   return (
-    <View style={styles.card}>
+    <Animated.View style={[styles.card, cardAnimatedStyle]}>
       {/* Optional Icon */}
       {icon && (
         <View style={styles.iconContainer}>
@@ -169,23 +195,23 @@ export default function OnboardingSliderCard({
       {/* Question Text */}
       <Text style={styles.questionText}>{questionText}</Text>
       
-      {/* Slider Container */}
+      {/* Enhanced Slider Container */}
       <View style={styles.sliderContainer}>
         <GestureDetector gesture={panGesture}>
           <View style={styles.sliderWrapper} onLayout={handleLayout}>
             {/* Track Background */}
             <View style={styles.trackBackground} />
             
-            {/* Track Glow (subtle background glow) */}
+            {/* Enhanced Track Glow */}
             <Animated.View style={[styles.trackGlow, trackGlowStyle]} />
             
             {/* Track Progress */}
             <Animated.View style={[styles.trackProgress, trackProgressAnimatedStyle]} />
             
-            {/* Thumb Glow (appears on interaction) */}
+            {/* Enhanced Thumb Glow */}
             <Animated.View style={[styles.thumbGlow, thumbGlowStyle]} />
             
-            {/* Thumb */}
+            {/* Enhanced Thumb */}
             <Animated.View style={[styles.thumb, thumbAnimatedStyle]}>
               <View style={styles.thumbInner} />
               <View style={styles.thumbCore} />
@@ -199,7 +225,7 @@ export default function OnboardingSliderCard({
         <Text style={styles.leftLabel}>{leftLabel}</Text>
         <Text style={styles.rightLabel}>{rightLabel}</Text>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -249,11 +275,12 @@ const styles = StyleSheet.create({
     right: 0,
   },
   trackGlow: {
-    height: 8,
+    height: 12,
     backgroundColor: '#bfdbfe', // blue-200
-    borderRadius: 4,
+    borderRadius: 6,
     position: 'absolute',
     left: 0,
+    top: -2,
   },
   trackProgress: {
     height: 8,
@@ -264,11 +291,11 @@ const styles = StyleSheet.create({
   },
   thumbGlow: {
     position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#93c5fd', // blue-300
-    top: -16,
+    top: -20,
   },
   thumb: {
     position: 'absolute',
